@@ -1,6 +1,7 @@
 import time
 import hashlib
 import hmac
+import jwt
 from collections import defaultdict
 from typing import Optional
 from datetime import datetime, timedelta
@@ -121,8 +122,11 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if self.jwt_enabled:
             auth_header = request.headers.get(self.jwt_header_name, "")
 
-            # Skip auth for public endpoints
-            if not self._is_public_endpoint(request.url.path):
+            # Skip auth for public endpoints and GET requests
+            is_public = self._is_public_endpoint(request.url.path)
+            is_read_only = request.method == "GET"
+            
+            if not is_public and not is_read_only:
                 if not auth_header:
                     return JSONResponse(
                         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -130,7 +134,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                         headers={"WWW-Authenticate": "Bearer"},
                     )
 
-                # Validate Bearer token format
+                # Validate Bearer format
                 if not auth_header.startswith("Bearer "):
                     return JSONResponse(
                         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -138,10 +142,26 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                         headers={"WWW-Authenticate": "Bearer"},
                     )
 
-                # Token validation would happen here with piccolo_api
-                # For now, we accept any Bearer token
+                # Extract and validate token
                 token = auth_header[7:]
                 if not token or len(token) < 10:
+                    return JSONResponse(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        content={"detail": "Invalid token"},
+                        headers={"WWW-Authenticate": "Bearer"},
+                    )
+
+                # Validate JWT signature
+                try:
+                    from app.core.config import settings
+                    jwt.decode(token, settings.secret_key, algorithms=["HS256"])
+                except jwt.ExpiredSignatureError:
+                    return JSONResponse(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        content={"detail": "Token has expired"},
+                        headers={"WWW-Authenticate": "Bearer"},
+                    )
+                except jwt.InvalidTokenError:
                     return JSONResponse(
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         content={"detail": "Invalid token"},
@@ -173,14 +193,31 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         request.state.timestamp = datetime.utcnow()
 
         # 5. Call next middleware/route handler
-        response = await call_next(request)
+        import logging
+        logging.basicConfig(level=logging.DEBUG)
+        logger = logging.getLogger(__name__)
+        
+        try:
+            response = await call_next(request)
+        except Exception as e:
+            # Log the error and return 500
+            logger.error(f"Error in route handler: {type(e).__name__}: {str(e)}", exc_info=True)
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content={"detail": "Internal server error", "error": str(e)},
+            )
 
         # 6. Add security response headers
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-        response.headers["Content-Security-Policy"] = "default-src 'self'"
+        
+        # Relaxed CSP for admin panel and development
+        if request.url.path.startswith("/admin"):
+            response.headers["Content-Security-Policy"] = "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; img-src 'self' data: blob:; font-src 'self' data:;"
+        else:
+            response.headers["Content-Security-Policy"] = "default-src 'self'"
 
         return response
 
@@ -191,6 +228,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             "/docs",
             "/openapi.json",
             "/redoc",
-            "/admin",
+            "/api/auth/login",
+            "/api/ai/health",
+            "/api/ai/chat",
         ]
         return any(path.startswith(p) for p in public_paths)

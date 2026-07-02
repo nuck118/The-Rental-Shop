@@ -3,18 +3,21 @@ fastapi==0.115.5
 uvicorn[standard]==0.32.1
 
 # ORM / Database
-piccolo[sqlite]==1.24.2
-piccolo_admin==1.5.0
+sqlalchemy>=2.0.36
+alembic>=1.13.1
 
-# Auth / Session
-piccolo_api==1.4.1
-
-# AI
-google-genai==1.16.0
+# Admin Panel
+sqladmin>=0.1.6
 
 # Validation / Settings
 pydantic==2.10.3
 pydantic-settings==2.6.1
 
+# Authentication
+pyjwt==2.8.1
+
 # Async HTTP (for AI client transport)
 httpx==0.28.1
+
+# AI
+google-genai==1.16.0

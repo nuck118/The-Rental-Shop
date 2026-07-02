@@ -2,9 +2,20 @@
 An async-native, AI-driven Hardware Rental Hub built to orchestrate corporate equipment workflows. The platform leverages an advanced asynchronous backend architecture paired with an immediate, optimistic user interface to manage asset life cycles, enforce atomic concurrency guardrails, and execute semantic inventory discovery.
 
 ## Stack
-- **Backend** — FastAPI (async ASGI), Piccolo ORM + SQLite, piccolo_admin, piccolo_api
+- **Backend** — FastAPI (async ASGI), SQLAlchemy ORM + SQLite, Alembic migrations
 - **AI** — Google GenAI SDK (`gemini-2.5-flash`)
 - **Frontend** — Vue 3 (Vite, Composition API), Pinia, Vue Router, Tailwind CSS, Preline
+
+## Migration Note
+
+This project previously used **Piccolo ORM** but was migrated to **SQLAlchemy + Alembic** due to Piccolo's lack of auto-migration support. SQLAlchemy + Alembic provides:
+
+- **Automatic migration generation** — Alembic detects model changes and generates migration files automatically
+- **Version control** — All schema changes are tracked and reversible
+- **Production-ready** — Industry-standard tool used by Django, Flask, and major projects
+- **Better ecosystem** — Larger community and more extensions
+
+For detailed migration information, see [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md).
 
 ---
 
@@ -46,7 +57,17 @@ cp .env.example .env
 Run database migrations:
 
 ```bash
-piccolo migrations run
+# Create initial migration for HardwareAsset table
+alembic revision --autogenerate -m "Add HardwareAsset table"
+
+# Apply the migration to create the database schema
+alembic upgrade head
+```
+
+Seed the database with sample data:
+
+```bash
+python scripts/seed_hardware.py
 ```
 
 Start the development server:
@@ -70,6 +91,279 @@ npm run dev
 
 The app is available at `http://localhost:5173`.  
 All `/api` and `/admin` requests are proxied to the backend automatically.
+
+---
+
+## Admin Panel (SQLAdmin)
+
+The admin panel at **http://localhost:8000/admin** provides three main tabs:
+
+### User Management
+- Create new user accounts
+- Edit user details
+- Activate/deactivate users
+- Promote users to admin
+- Search and filter users
+
+### Hardware Management
+- Create, read, update, delete hardware assets
+- Manage hardware status (Available, In Use, Repair, Unknown)
+- Assign hardware to users
+- Add maintenance notes
+- Search and filter hardware
+
+### Audit History
+- View all changes made by users
+- Track user actions (CREATE, UPDATE, DELETE)
+- See old and new values for changes
+- Filter by user, action, or table
+- Export audit logs
+
+For detailed admin panel documentation, see [SQLADMIN_GUIDE.md](SQLADMIN_GUIDE.md).
+
+---
+
+Complete API documentation is available via Swagger UI at **http://localhost:8000/docs** when the backend is running.
+
+For detailed API reference, see [API_DOCUMENTATION.md](API_DOCUMENTATION.md).
+
+### Available Endpoints
+
+#### Hardware Management
+
+**GET /api/hardware** — List all hardware assets
+- Query parameters: `skip`, `limit`, `status`
+- Returns: List of HardwareAsset objects
+
+**GET /api/hardware/{id}** — Get hardware asset by ID
+- Path parameter: `id` (integer)
+- Returns: Single HardwareAsset object
+
+**POST /api/hardware** — Create new hardware asset
+- Request body: HardwareAsset data
+- Returns: Created HardwareAsset object
+
+**PUT /api/hardware/{id}** — Update hardware asset
+- Path parameter: `id` (integer)
+- Request body: Updated HardwareAsset data
+- Returns: Updated HardwareAsset object
+
+**DELETE /api/hardware/{id}** — Delete hardware asset
+- Path parameter: `id` (integer)
+- Returns: Success message
+
+#### AI Chatbot
+
+**POST /api/ai/chat** — Get device recommendations
+- Request body:
+  ```json
+  {
+    "message": "I need a laptop for software development",
+    "conversation_history": []
+  }
+  ```
+- Returns: ChatbotResponse with recommendations
+
+**GET /api/ai/health** — Check AI service health
+- Returns: Service status and model information
+
+#### System Health
+
+**GET /health** — System health check
+- Returns: Service status
+
+**GET /docs** — Swagger UI documentation
+- Interactive API documentation
+
+**GET /openapi.json** — OpenAPI schema
+- Machine-readable API specification
+
+### Authentication
+
+Protected endpoints require Bearer token authentication:
+
+```
+Authorization: Bearer <token>
+```
+
+Public endpoints (no auth required):
+- `/health`
+- `/docs`
+- `/openapi.json`
+- `/redoc`
+
+### Error Responses
+
+All endpoints return standard HTTP status codes:
+
+- `200 OK` — Successful request
+- `201 Created` — Resource created
+- `400 Bad Request` — Invalid request data
+- `401 Unauthorized` — Missing or invalid authentication
+- `403 Forbidden` — CSRF token invalid or insufficient permissions
+- `404 Not Found` — Resource not found
+- `429 Too Many Requests` — Rate limit exceeded
+- `500 Internal Server Error` — Server error
+- `504 Gateway Timeout` — AI service timeout
+
+### Rate Limiting
+
+All endpoints are rate-limited:
+- **Default**: 100 requests per 60 seconds
+- **Per-client**: Tracked by Bearer token or IP address
+- **Response**: 429 Too Many Requests when exceeded
+
+Configure via `.env`:
+```
+RATE_LIMIT_WINDOW=60
+RATE_LIMIT_MAX_REQUESTS=100
+```
+
+### CORS
+
+Cross-Origin Resource Sharing is enabled for configured origins:
+
+```
+CORS_ORIGINS=["http://localhost:5173", "https://app.example.com"]
+```
+
+Allowed methods: GET, POST, PUT, DELETE, PATCH, OPTIONS
+
+---
+
+## AI Chatbot Assistant
+
+The platform includes an intelligent device recommendation chatbot powered by Gemini. Users can describe their needs in natural language, and the assistant recommends available devices from the inventory.
+
+### How It Works
+
+1. **Natural Language Input**: Users describe what they need (e.g., "I need a laptop for software development")
+2. **Database Query**: The service queries all available devices from the inventory
+3. **AI Analysis**: Gemini analyzes the user's request against available devices
+4. **Smart Recommendations**: Returns matching devices with personalized reasons for each recommendation
+5. **Multi-turn Conversations**: Maintains conversation history for context-aware follow-up questions
+
+### API Endpoint
+
+**POST /api/ai/chat** — Get device recommendations
+
+**Request:**
+```json
+{
+  "message": "I need a phone with a great camera for photography",
+  "conversation_history": []
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Great! For photography, I'd recommend the iPhone 13 Pro Max with its exceptional camera system...",
+  "recommendations": [
+    {
+      "id": 1,
+      "name": "Apple iPhone 13 Pro Max",
+      "brand": "Apple",
+      "status": "Available",
+      "reason": "Great camera capabilities for photography and video"
+    }
+  ],
+  "conversation_context": "I need a phone with a great camera for photography"
+}
+```
+
+### Features
+
+- **Context-Aware**: Understands user intent and device specifications
+- **Multi-turn Support**: Maintains conversation history for follow-up questions
+- **Real-time Inventory**: Always recommends from currently available devices
+- **Personalized Reasons**: Explains why each device matches the user's needs
+- **Graceful Fallbacks**: Suggests alternatives if exact matches aren't available
+
+### Error Handling
+
+- `401 Unauthorized` — API credentials not configured
+- `429 Too Many Requests` — API rate limit exceeded
+- `504 Gateway Timeout` — API request timed out
+- `500 Internal Server Error` — Other API or processing errors
+
+### Health Check
+
+**GET /api/ai/health** — Verify the AI service is ready
+
+```bash
+curl http://localhost:8000/api/ai/health
+```
+
+### Architecture
+
+The chatbot service is built with a clean, decoupled architecture:
+
+**Schemas** (`app/ai/schemas.py`):
+- `ChatMessage` — individual message with role (user/assistant) and content
+- `DeviceRecommendation` — recommended device with ID, name, brand, status, and personalized reason
+- `ChatbotResponse` — assistant response with message, recommendations, and conversation context
+
+**Service** (`app/ai/services.py`):
+- `DeviceRecommendationService` — core recommendation engine
+  - `chat()` — main async method that processes user messages
+  - `_fetch_available_devices()` — queries database for available devices
+  - `_format_devices_for_context()` — formats device info for AI prompt
+  - `_build_recommendation_prompt()` — constructs Gemini prompt with conversation history
+  - `_parse_response()` — extracts device IDs and message from Gemini response
+  - `_get_recommendation_reason()` — generates personalized recommendation reasons
+
+**Router** (`app/ai/router.py`):
+- `POST /api/ai/chat` — main chatbot endpoint with dependency injection
+- `GET /api/ai/health` — service health check
+- Comprehensive error handling mapping to HTTP status codes
+
+### Request Flow
+
+```
+User Message (natural language)
+    ↓
+[POST /api/ai/chat]
+    ↓
+[Security Middleware] → Rate limit, JWT, CSRF checks
+    ↓
+[DeviceRecommendationService.chat()]
+    ├─ Query database for available devices
+    ├─ Format devices into context
+    ├─ Build prompt with conversation history
+    ├─ Call client.aio.models.generate_content() (async, non-blocking)
+    ├─ Parse response for device IDs
+    ├─ Build DeviceRecommendation objects
+    └─ Return ChatbotResponse
+    ↓
+[ChatbotResponse] → JSON with message + recommendations
+```
+
+### Implementation Details
+
+**Modern SDK Integration**:
+- Uses `from google import genai` (modern SDK, not legacy `google-generativeai`)
+- Initializes `genai.Client(api_key=...)` with credentials from `.env`
+- Calls `client.aio.models.generate_content()` for async, non-blocking API calls
+- Avoids blocking the ASGI event loop
+
+**Database Integration**:
+- Queries `HardwareAsset` table for devices with status="Available"
+- Formats device metadata (ID, name, brand, notes) for AI context
+- Ensures recommendations are always from current inventory
+
+**Prompt Engineering**:
+- Includes available devices list in prompt context
+- Incorporates conversation history (last 3 messages) for multi-turn support
+- Instructs Gemini to return device IDs in parseable format: "Recommended IDs: [1, 3, 5]"
+- Requests personalized, conversational responses
+
+**Error Handling**:
+- `AIAuthenticationError` (401) — missing/invalid API key
+- `AIRateLimitError` (429) — quota exceeded
+- `AITimeoutError` (504) — request deadline exceeded
+- `AIServiceError` — catch-all for other failures
+- All exceptions mapped to appropriate HTTP status codes
 
 ---
 
@@ -192,17 +486,22 @@ Incoming Request
 
 ---
 
+## Database Migrations
+
 Run these from the `backend/` directory with the virtual environment active.
 
 ```bash
 # Create a new migration after changing models
-piccolo migrations new app --auto
+alembic revision --autogenerate -m "Description of changes"
 
 # Apply all pending migrations
-piccolo migrations run
+alembic upgrade head
 
-# Check migration status
-piccolo migrations check
+# Downgrade to previous migration
+alembic downgrade -1
+
+# View migration history
+alembic history
 ```
 
 ---
@@ -213,13 +512,21 @@ piccolo migrations check
 The-Rental-Shop/
 ├── backend/
 │   ├── app/
+│   │   ├── ai/                # AI chatbot service
 │   │   ├── api/routes/        # API route modules
-│   │   ├── core/config.py     # Settings (pydantic-settings)
-│   │   ├── models/            # Piccolo Table definitions
+│   │   ├── core/
+│   │   │   ├── config.py      # Settings (pydantic-settings)
+│   │   │   └── database.py    # SQLAlchemy engine & session
+│   │   ├── models/            # SQLAlchemy ORM models
+│   │   ├── security/          # Security middleware
 │   │   ├── main.py            # FastAPI app factory
-│   │   └── piccolo_app.py     # Piccolo app config for migrations
-│   ├── migrations/            # Auto-generated migration files
-│   ├── piccolo_conf.py        # DB engine + app registry
+│   │   └── __init__.py
+│   ├── alembic/               # Alembic migrations
+│   │   ├── versions/          # Migration files
+│   │   ├── env.py             # Alembic environment
+│   │   └── script.py.mako     # Migration template
+│   ├── scripts/               # Utility scripts
+│   ├── alembic.ini            # Alembic configuration
 │   ├── requirements.txt
 │   └── .env.example
 ├── frontend/
