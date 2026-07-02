@@ -6,6 +6,7 @@ from piccolo_admin.endpoints import create_admin
 from piccolo.engine import engine_finder
 
 from app.core.config import settings
+from app.models.hardware import HardwareAsset
 
 
 @asynccontextmanager
@@ -27,7 +28,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    app.mount("/admin", create_admin(tables=[]))
+    app.mount("/admin", create_admin(tables=[HardwareAsset]))
 
     return app
 
