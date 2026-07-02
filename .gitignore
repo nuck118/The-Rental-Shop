@@ -30,6 +30,9 @@ frontend/.vite/
 .DS_Store
 Thumbs.db
 
+# Scripts
+backend/scripts/
+
 # IDE
 .vscode/
 .idea/
