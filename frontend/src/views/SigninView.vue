@@ -102,12 +102,7 @@ const handleKeydown = (e) => {
           </button>
         </form>
 
-        <!-- Demo Credentials -->
-        <div class="mt-8 pt-8 border-t border-neutral-200">
-          <p class="text-center text-xs text-neutral-600 font-light">
-            Demo: <span class="font-medium text-neutral-700">admin</span> / <span class="font-medium text-neutral-700">admin123</span>
-          </p>
-        </div>
+
       </div>
     </div>
   </div>

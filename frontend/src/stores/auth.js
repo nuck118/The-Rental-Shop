@@ -1,8 +1,10 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 
+const storedUser = localStorage.getItem("user");
+
 export const useAuthStore = defineStore("auth", () => {
-  const user = ref(null);
+  const user = ref(storedUser ? JSON.parse(storedUser) : null);
   const token = ref(localStorage.getItem("token") || null);
   const isAuthenticated = computed(() => !!token.value);
 
@@ -22,6 +24,7 @@ export const useAuthStore = defineStore("auth", () => {
       token.value = data.token;
       user.value = data.user;
       localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
       return true;
     } catch (error) {
       console.error("Login failed:", error);
@@ -33,6 +36,7 @@ export const useAuthStore = defineStore("auth", () => {
     token.value = null;
     user.value = null;
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
   };
 
   return {

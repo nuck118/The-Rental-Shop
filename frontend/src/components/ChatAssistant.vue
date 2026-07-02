@@ -113,10 +113,10 @@ const handleKeydown = (e) => {
   }
 };
 
-const rentDevice = (deviceId) => {
-  console.log('Rent device:', deviceId);
-  // TODO: Implement rent functionality
-  alert(`Renting device ID: ${deviceId}`);
+const emit = defineEmits(['rent']);
+
+const rentDevice = (device) => {
+  emit("rent", device);
 };
 </script>
 
@@ -169,7 +169,7 @@ const rentDevice = (deviceId) => {
               <button
                 v-if="rec.status === 'Available'"
                 class="mt-3 w-full py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded transition"
-                @click="rentDevice(rec.id)"
+                @click="rentDevice(rec)"
               >
                 Rent This Device
               </button>

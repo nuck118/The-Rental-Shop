@@ -5,9 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.models.hardware import HardwareAsset
-from app.models.user import User
-from app.models.audit_log import AuditLog
+import app.models  # noqa: F401 — register models with Base.metadata
 from app.security.middleware import SecurityMiddleware
 from app.ai.router import router as ai_router
 from app.api.routes.hardware import router as hardware_router
@@ -19,20 +17,13 @@ from app.admin import setup_admin
 async def lifespan(app: FastAPI):
     # Create all tables on startup
     Base.metadata.create_all(bind=engine)
-    
-    # Store secret key in app for admin auth
-    app.secret_key = settings.secret_key
-    
-    # Setup SQLAdmin
-    setup_admin(app)
-    
     yield
 
 
 def create_app() -> FastAPI:
     app = FastAPI(title="The Rental Shop API", lifespan=lifespan)
 
-    # Security Middleware (must be added first, before CORS)
+    # Security Middleware
     app.add_middleware(
         SecurityMiddleware,
         secret_key=settings.secret_key,
@@ -56,6 +47,11 @@ def create_app() -> FastAPI:
     app.include_router(auth_router)
     app.include_router(hardware_router)
     app.include_router(ai_router)
+
+    # SQLAdmin mounts its own SessionMiddleware via AuthenticationBackend.
+    # Do not add a global SessionMiddleware here — a duplicate would overwrite
+    # the admin session cookie on every response.
+    setup_admin(app)
 
     return app
 

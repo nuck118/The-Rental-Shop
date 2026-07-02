@@ -1,0 +1,9 @@
+{% extends "sqladmin/details.html" %}
+
+{% block content %}
+<div class="admin-readonly-banner">
+  <i class="fa-solid fa-lock"></i>
+  Audit logs are read-only records of historical changes and cannot be edited.
+</div>
+{{ super() }}
+{% endblock %}

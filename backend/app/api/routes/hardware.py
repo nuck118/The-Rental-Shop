@@ -1,10 +1,11 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 from datetime import date
 
 from app.core.database import get_db
+from app.core.deps import get_current_active_user, get_current_active_admin
 from app.models.hardware import HardwareAsset
 
 router = APIRouter(prefix="/api/hardware", tags=["Hardware Management"])
@@ -15,10 +16,10 @@ class HardwareAssetResponse(BaseModel):
     id: int
     name: str
     brand: str
-    purchase_date: date = None
+    purchase_date: Optional[date] = None
     status: str
-    assigned_to: str = None
-    notes: str = None
+    assigned_to: Optional[str] = None
+    notes: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -345,42 +346,91 @@ def update_hardware(
 
 @router.delete(
     "/{hardware_id}",
-    status_code=status.HTTP_200_OK,
-    summary="Delete hardware asset",
-    description="Delete a hardware asset from the inventory",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a hardware asset",
+    description="Delete a hardware asset by its ID",
 )
 def delete_hardware(
     hardware_id: int,
     db: Session = Depends(get_db),
+    current_user=Depends(get_current_active_admin),
 ):
     """
     Delete a hardware asset.
-
-    **Path Parameters:**
-    - `hardware_id`: The ID of the hardware asset to delete
-
-    **Response:**
-    Returns a success message.
-
-    **Error Responses:**
-    - `404 Not Found`: Hardware asset not found
-
-    **Example Response:**
-    ```json
-    {
-      "message": "Hardware asset with ID 1 deleted successfully"
-    }
-    ```
+    Requires administrator privileges.
     """
     device = db.query(HardwareAsset).filter(HardwareAsset.id == hardware_id).first()
-
     if not device:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Hardware asset with ID {hardware_id} not found",
+            detail="Hardware asset not found",
         )
 
     db.delete(device)
     db.commit()
 
-    return {"message": f"Hardware asset with ID {hardware_id} deleted successfully"}
+
+@router.post(
+    "/{hardware_id}/rent",
+    response_model=HardwareAssetResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Rent a hardware asset",
+    description="Rents an available hardware asset to the currently authenticated user.",
+)
+def rent_hardware(
+    hardware_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_active_user),
+):
+    """Rent a device."""
+    device = db.query(HardwareAsset).filter(HardwareAsset.id == hardware_id).first()
+    if not device:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Hardware asset not found")
+        
+    if device.status != "Available":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Device cannot be rented. Current status is '{device.status}'."
+        )
+        
+    device.status = "In Use"
+    device.assigned_to = current_user.username
+    db.commit()
+    db.refresh(device)
+    return device
+
+
+@router.post(
+    "/{hardware_id}/return",
+    response_model=HardwareAssetResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Return a hardware asset",
+    description="Returns a hardware asset that is currently rented by the user.",
+)
+def return_hardware(
+    hardware_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_active_user),
+):
+    """Return a device."""
+    device = db.query(HardwareAsset).filter(HardwareAsset.id == hardware_id).first()
+    if not device:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Hardware asset not found")
+        
+    if device.status != "In Use":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Device cannot be returned. Current status is '{device.status}'."
+        )
+        
+    if device.assigned_to != current_user.username:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You cannot return a device you did not rent."
+        )
+        
+    device.status = "Available"
+    device.assigned_to = None
+    db.commit()
+    db.refresh(device)
+    return device

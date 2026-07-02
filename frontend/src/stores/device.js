@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { ref, computed } from "vue";
 
 export const useDeviceStore = defineStore("device", () => {
   const availableDevices = ref([]);
@@ -64,11 +64,11 @@ export const useDeviceStore = defineStore("device", () => {
     }
   };
 
-  const fetchAllDevices = async (token, page = 1, limit = 12) => {
+  const fetchAllDevices = async (token, page = 1, limit = 100) => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await fetch("/api/hardware?skip=" + (page - 1) * limit + "&limit=" + limit, {
+      const response = await fetch("/api/hardware?skip=0&limit=" + limit, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error("Failed to fetch all devices");
@@ -77,6 +77,52 @@ export const useDeviceStore = defineStore("device", () => {
       totalDevices.value = devices.length;
     } catch (err) {
       error.value = err.message;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const rentDevice = async (token, hardwareId) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await fetch(`/api/hardware/${hardwareId}/rent`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.detail || "Failed to rent device");
+      }
+      const device = await response.json();
+      await fetchAllDevices(token);
+      return device;
+    } catch (err) {
+      error.value = err.message;
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const returnDevice = async (token, hardwareId) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await fetch(`/api/hardware/${hardwareId}/return`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.detail || "Failed to return device");
+      }
+      const device = await response.json();
+      await fetchAllDevices(token);
+      return device;
+    } catch (err) {
+      error.value = err.message;
+      throw err;
     } finally {
       loading.value = false;
     }
@@ -99,5 +145,7 @@ export const useDeviceStore = defineStore("device", () => {
     fetchRentedDevices,
     fetchDeviceHistory,
     fetchAllDevices,
+    rentDevice,
+    returnDevice,
   };
 });

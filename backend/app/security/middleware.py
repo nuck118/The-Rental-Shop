@@ -95,7 +95,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
     def _get_session_id(self, request: Request) -> Optional[str]:
         """Extract session ID from cookies or headers."""
-        # Check for session cookie
+        # Check for session cookie (Starlette SessionMiddleware uses "session" by default)
+        session_cookie = request.cookies.get("session")
+        if session_cookie:
+            return session_cookie
+
+        # Check for session_id cookie (legacy)
         session_cookie = request.cookies.get("session_id")
         if session_cookie:
             return session_cookie
@@ -169,7 +174,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     )
 
         # 3. CSRF Verification (if enabled and method is mutable)
-        if self.csrf_enabled and request.method in self.protected_methods:
+        # Skip CSRF for admin panel - it uses its own session management
+        if self.csrf_enabled and request.method in self.protected_methods and not request.url.path.startswith("/admin"):
             session_id = self._get_session_id(request)
 
             if session_id:
@@ -193,19 +199,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         request.state.timestamp = datetime.utcnow()
 
         # 5. Call next middleware/route handler
-        import logging
-        logging.basicConfig(level=logging.DEBUG)
-        logger = logging.getLogger(__name__)
-        
-        try:
-            response = await call_next(request)
-        except Exception as e:
-            # Log the error and return 500
-            logger.error(f"Error in route handler: {type(e).__name__}: {str(e)}", exc_info=True)
-            return JSONResponse(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content={"detail": "Internal server error", "error": str(e)},
-            )
+        response = await call_next(request)
 
         # 6. Add security response headers
         response.headers["X-Content-Type-Options"] = "nosniff"
@@ -231,5 +225,6 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             "/api/auth/login",
             "/api/ai/health",
             "/api/ai/chat",
+            "/admin",
         ]
         return any(path.startswith(p) for p in public_paths)

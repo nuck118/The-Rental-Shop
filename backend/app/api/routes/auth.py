@@ -50,7 +50,7 @@ def login(
     ```json
     {
       "username": "admin",
-      "password": "admin123"
+      "password": "your_password"
     }
     ```
 

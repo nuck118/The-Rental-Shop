@@ -1,0 +1,596 @@
+{% extends "sqladmin/base.html" %}
+{% from 'sqladmin/_macros.html' import display_menu %}
+
+{% block head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+<style>
+  /* ─── Design Tokens ─────────────────────────────────────── */
+  :root {
+    --rs-sidebar-w: 260px;
+    --rs-header-h: 60px;
+    --rs-radius-sm: 0px;
+    --rs-radius: 0px;
+    --rs-radius-lg: 0px;
+    --rs-transition: all 0.18s ease;
+    --bs-border-radius: 0 !important;
+    --bs-border-radius-sm: 0 !important;
+    --bs-border-radius-lg: 0 !important;
+    --bs-border-radius-xl: 0 !important;
+    --bs-border-radius-xxl: 0 !important;
+    --bs-border-radius-pill: 0 !important;
+  }
+
+  /* ─── Global Reset / Typography ─────────────────────────── */
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 0.9rem;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4, h5, h6, .rs-page-title, .card-title {
+    font-family: 'Playfair Display', serif !important;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  * { border-radius: 0 !important; }
+  .card { box-shadow: none !important; border: 1px solid #dee2e6 !important; }
+  .btn, .form-control, .form-select, .badge { box-shadow: none !important; border-radius: 0 !important; }
+
+  /* ─── App Shell ──────────────────────────────────────────── */
+  .rs-shell {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    background: var(--bs-body-bg);
+  }
+
+  /* ─── Sidebar ──────────────────────────────────────────── */
+  .rs-sidebar {
+    width: var(--rs-sidebar-w);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    background: #fff;
+    border-right: 2px solid #000;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  /* Brand / logo strip */
+  .rs-sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.5rem 1.25rem 1.25rem;
+    text-decoration: none;
+    border-bottom: 2px solid #000;
+    margin-bottom: 0;
+  }
+  .rs-sidebar-brand-icon {
+    width: 32px;
+    height: 32px;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .rs-sidebar-brand-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #000;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+
+  /* Section label */
+  .rs-sidebar-section-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #999;
+    padding: 1.25rem 1.25rem 0.4rem;
+  }
+
+  /* Nav links – targets sqladmin's .navbar-nav .nav-link */
+  .rs-sidebar .navbar-nav { flex-direction: column; width: 100%; padding: 0; }
+  .rs-sidebar .navbar-nav .nav-item { width: 100%; }
+
+  .rs-sidebar .navbar-nav .nav-link,
+  .rs-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.85rem 1.25rem;
+    color: #555;
+    text-decoration: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    border-left: 3px solid transparent;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    position: relative;
+    border-radius: 0;
+    margin: 0;
+    width: 100%;
+  }
+  .rs-sidebar .navbar-nav .nav-link:hover,
+  .rs-nav-link:hover {
+    color: #000;
+    border-left-color: #ccc;
+    background: #f8f8f8;
+  }
+  .rs-sidebar .navbar-nav .nav-link.active,
+  .rs-nav-link.active {
+    color: #000;
+    font-weight: 700;
+    border-left-color: #000;
+    background: #f4f4f4;
+  }
+  .rs-nav-link .rs-nav-icon,
+  .rs-sidebar .navbar-nav .nav-link .nav-link-icon {
+    width: 20px;
+    text-align: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+    opacity: 0.6;
+  }
+  .rs-sidebar .navbar-nav .nav-link.active .nav-link-icon { opacity: 1; }
+
+  /* Category (group) dropdown – always expanded in sidebar */
+  .rs-sidebar .navbar-nav .nav-link.dropdown-toggle {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #999;
+    border-left-color: transparent !important;
+    background: transparent !important;
+    cursor: default;
+    padding-top: 1.1rem;
+    padding-bottom: 0.3rem;
+  }
+  .rs-sidebar .navbar-nav .nav-link.dropdown-toggle::after { display: none; }
+  .rs-sidebar .navbar-nav .dropdown-menu {
+    position: static;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    display: block !important;
+  }
+  .rs-sidebar .navbar-nav .dropdown-menu .nav-link {
+    padding-left: 2.25rem;
+    font-size: 0.82rem;
+  }
+
+  /* Sidebar footer */
+  .rs-sidebar-footer {
+    margin-top: auto;
+    padding: 1rem 1.25rem;
+    border-top: 2px solid #000;
+  }
+
+  /* ─── Main Workspace ─────────────────────────────────────── */
+  .rs-workspace {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: auto;
+  }
+
+  /* ─── Top Header ─────────────────────────────────────────── */
+  .rs-header {
+    height: var(--rs-header-h);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0 1.5rem;
+    background: var(--bs-body-tertiary-bg);
+    border-bottom: 1px solid var(--bs-border-color-translucent);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .rs-search {
+    position: relative;
+    width: 280px;
+  }
+  .rs-search-icon {
+    position: absolute;
+    left: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--bs-secondary-color);
+    font-size: 0.8rem;
+    pointer-events: none;
+  }
+  .rs-search-input {
+    padding-left: 2.25rem;
+    padding-right: 1rem;
+    border-radius: 999px;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color-translucent);
+    color: var(--bs-body-color);
+    font-size: 0.85rem;
+    height: 36px;
+    transition: var(--rs-transition);
+  }
+  .rs-search-input:focus {
+    box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.15);
+    border-color: var(--bs-primary);
+    outline: none;
+  }
+  .rs-search-input::placeholder { color: var(--bs-secondary-color); }
+
+  .rs-header-actions { display: flex; align-items: center; gap: 0.5rem; }
+  .rs-icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--rs-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid var(--bs-border-color-translucent);
+    color: var(--bs-secondary-color);
+    cursor: pointer;
+    transition: var(--rs-transition);
+    text-decoration: none;
+    font-size: 0.85rem;
+  }
+  .rs-icon-btn:hover {
+    background: var(--bs-secondary-bg);
+    color: var(--bs-body-color);
+    border-color: var(--bs-border-color);
+  }
+
+  .rs-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    color: var(--bs-secondary-color);
+  }
+  .rs-breadcrumb strong { color: var(--bs-body-color); font-weight: 600; }
+
+  /* ─── Content Area ───────────────────────────────────────── */
+  .rs-content {
+    flex: 1;
+    min-width: 0;
+    padding: 1.75rem 1.75rem;
+  }
+
+  .rs-page-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.25rem;
+  }
+
+  /* ─── Cards ──────────────────────────────────────────────── */
+  .card {
+    border: 1px solid var(--bs-border-color-translucent);
+    border-radius: var(--rs-radius);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    background: var(--bs-body-tertiary-bg);
+    transition: box-shadow 0.2s;
+  }
+  .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04); }
+  .card-header {
+    background: transparent;
+    border-bottom: 1px solid var(--bs-border-color-translucent);
+    padding: 1.1rem 1.5rem;
+    font-weight: 600;
+  }
+  .card-body { padding: 1.5rem; }
+  .card-footer {
+    background: transparent;
+    border-top: 1px solid var(--bs-border-color-translucent);
+    padding: 0.85rem 1.5rem;
+  }
+
+  /* ─── Tables ─────────────────────────────────────────────── */
+  .table {
+    margin-bottom: 0;
+    font-size: 0.875rem;
+  }
+  .table > :not(caption) > * > * {
+    padding: 0.9rem 1.25rem;
+    vertical-align: middle;
+    border-bottom-color: var(--bs-border-color-translucent);
+  }
+  .table thead > tr > th {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-weight: 700;
+    color: var(--bs-secondary-color);
+    background: var(--bs-body-bg);
+    border-bottom: 2px solid var(--bs-border-color-translucent) !important;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+  .table-hover > tbody > tr:hover > * {
+    background: rgba(var(--bs-primary-rgb), 0.03);
+  }
+
+  /* ─── Status Badges ──────────────────────────────────────── */
+  .rs-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+  }
+  /* Legacy admin-badge support */
+  .admin-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+  }
+
+  /* ─── Buttons ────────────────────────────────────────────── */
+  .btn {
+    border-radius: var(--rs-radius-sm);
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.45rem 1rem;
+    transition: var(--rs-transition);
+  }
+  .btn-primary { box-shadow: 0 1px 2px rgba(var(--bs-primary-rgb), 0.25); }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(var(--bs-primary-rgb), 0.3); }
+  .btn-sm { padding: 0.3rem 0.65rem; font-size: 0.8rem; }
+
+  /* ─── Forms & Validation ─────────────────────────────────── */
+  .form-label {
+    font-size: 0.825rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    color: var(--bs-body-color);
+  }
+  .form-control, .form-select {
+    border-radius: var(--rs-radius-sm);
+    border-color: var(--bs-border-color);
+    background: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    padding: 0.55rem 0.9rem;
+    font-size: 0.875rem;
+    transition: var(--rs-transition);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04) inset;
+  }
+  .form-control:focus, .form-select:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.15);
+    outline: none;
+  }
+  .form-control.is-invalid, .form-select.is-invalid {
+    border-color: var(--bs-danger);
+    box-shadow: none;
+  }
+  .form-control.is-invalid:focus, .form-select.is-invalid:focus {
+    box-shadow: 0 0 0 3px rgba(var(--bs-danger-rgb), 0.15);
+  }
+  .invalid-feedback {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-top: 0.35rem;
+    color: var(--bs-danger);
+  }
+  .form-floating .form-control { padding: 1rem 0.9rem 0.25rem; }
+  .form-floating label { padding: 0.85rem 0.9rem; font-size: 0.875rem; color: var(--bs-secondary-color); }
+  .form-text, .help-block {
+    font-size: 0.8rem;
+    color: var(--bs-secondary-color);
+    margin-top: 0.3rem;
+    display: block;
+  }
+  .required-label::after {
+    content: ' *';
+    color: var(--bs-danger);
+  }
+
+  /* ─── Alerts ─────────────────────────────────────────────── */
+  .alert {
+    border-radius: var(--rs-radius);
+    border: none;
+    padding: 0.9rem 1.1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  .alert-danger {
+    background: rgba(var(--bs-danger-rgb), 0.1);
+    color: var(--bs-danger);
+    border-left: 4px solid var(--bs-danger);
+  }
+  .alert-success {
+    background: rgba(var(--bs-success-rgb), 0.1);
+    color: var(--bs-success);
+    border-left: 4px solid var(--bs-success);
+  }
+  .alert-info {
+    background: rgba(var(--bs-info-rgb), 0.1);
+    color: var(--bs-info);
+    border-left: 4px solid var(--bs-info);
+  }
+
+  /* ─── Pagination ─────────────────────────────────────────── */
+  .pagination { gap: 0.2rem; }
+  .page-link {
+    border-radius: var(--rs-radius-sm) !important;
+    border: 1px solid var(--bs-border-color-translucent);
+    font-size: 0.8rem;
+    padding: 0.35rem 0.65rem;
+    color: var(--bs-body-color);
+    background: var(--bs-body-tertiary-bg);
+    transition: var(--rs-transition);
+  }
+  .page-link:hover {
+    background: var(--bs-secondary-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+  }
+  .page-item.active .page-link {
+    background: var(--bs-primary);
+    border-color: var(--bs-primary);
+    color: #fff;
+  }
+  .page-item.disabled .page-link { opacity: 0.4; }
+
+  /* ─── Readonly Banner ────────────────────────────────────── */
+  .rs-readonly-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.9rem 1.1rem;
+    margin-bottom: 1.5rem;
+    border-radius: var(--rs-radius);
+    background: rgba(var(--bs-info-rgb), 0.1);
+    color: var(--bs-info);
+    font-weight: 600;
+    font-size: 0.875rem;
+    border-left: 4px solid var(--bs-info);
+  }
+  /* Legacy support */
+  .admin-readonly-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.9rem 1.1rem;
+    margin-bottom: 1.5rem;
+    border-radius: var(--rs-radius);
+    background: rgba(var(--bs-info-rgb), 0.1);
+    color: var(--bs-info);
+    font-weight: 600;
+    font-size: 0.875rem;
+    border-left: 4px solid var(--bs-info);
+  }
+
+  /* ─── Audit / Change Table ───────────────────────────────── */
+  .admin-change-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--bs-border-color-translucent);
+    border-radius: var(--rs-radius);
+    background: var(--bs-body-bg);
+    margin-top: 1rem;
+  }
+  .admin-change-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  .admin-change-table th, .admin-change-table td {
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid var(--bs-border-color-translucent);
+    text-align: left;
+    vertical-align: middle;
+  }
+  .admin-change-table thead th {
+    background: var(--bs-body-tertiary-bg);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-weight: 700;
+    color: var(--bs-secondary-color);
+  }
+  .admin-change-row--changed td:nth-child(2) { background: rgba(var(--bs-warning-rgb), 0.08); }
+  .admin-change-row--changed td:nth-child(3) {
+    background: rgba(var(--bs-success-rgb), 0.08);
+    font-weight: 600;
+  }
+
+  /* ─── Skeleton / Placeholder ─────────────────────────────── */
+  .rs-skeleton { border-radius: var(--rs-radius-sm); background: var(--bs-secondary-bg); }
+
+  /* ─── Misc ───────────────────────────────────────────────── */
+  .admin-muted { color: var(--bs-secondary-color); }
+  .admin-audit-summary { color: var(--bs-body-color); }
+  .admin-form-section { margin-bottom: 1.75rem; }
+
+  /* ─── Responsive ─────────────────────────────────────────── */
+  @media (max-width: 768px) {
+    .rs-sidebar { display: none; }
+    .rs-search { width: 160px; }
+    .rs-content { padding: 1rem; }
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="rs-shell">
+
+  <!-- ═══ SIDEBAR ═══════════════════════════════════════════ -->
+  <aside class="rs-sidebar">
+
+    <!-- Brand -->
+    <a href="{{ url_for('admin:index') }}" class="rs-sidebar-brand">
+      <div class="rs-sidebar-brand-icon">
+        <i class="fa-solid fa-store"></i>
+      </div>
+      {% if admin.logo_url %}
+      <img src="{{ admin.logo_url }}" height="28" alt="{{ admin.title }}">
+      {% else %}
+      <span class="rs-sidebar-brand-name">{{ admin.title }}</span>
+      {% endif %}
+    </a>
+
+    <!-- Navigation -->
+    <div class="rs-sidebar-section-label">Menu</div>
+    <nav>
+      {{ display_menu(admin._menu, request) }}
+    </nav>
+
+    <!-- Footer -->
+    <div class="rs-sidebar-footer">
+      {% if admin.authentication_backend %}
+      <a href="{{ request.url_for('admin:logout') }}" class="rs-nav-link text-danger w-100">
+        <span class="rs-nav-icon"><i class="fa fa-sign-out"></i></span>
+        Logout
+      </a>
+      {% endif %}
+    </div>
+
+  </aside>
+
+  <!-- ═══ WORKSPACE ═════════════════════════════════════════ -->
+  <div class="rs-workspace">
+
+    <!-- ─ Main Content ─ -->
+    <main class="rs-content">
+
+{% block content_header %}{% endblock %}
+
+      <div>
+        {% block content %}{% endblock %}
+      </div>
+
+    </main>
+
+  </div><!-- /.rs-workspace -->
+
+</div><!-- /.rs-shell -->
+{% endblock %}

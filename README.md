@@ -506,6 +506,126 @@ alembic history
 
 ---
 
+## Project Status
+
+### ✅ Implemented
+
+**Backend:**
+- FastAPI async ASGI app with SQLAlchemy ORM + SQLite
+- JWT authentication (`/api/auth/login`) with Bearer tokens
+- Hardware CRUD endpoints (`GET/POST/PUT/DELETE /api/hardware`)
+- Rent/return workflow (`POST /api/hardware/{id}/rent`, `/return`)
+- AI chatbot service using Google GenAI (`gemini-2.5-flash`) with async client
+- AI-powered repair flagging — scans device notes for repair indicators and sets `repair_flagged = True` for admin review
+- Security middleware: rate limiting, CSRF protection, JWT verification, CORS, security headers
+- SQLAdmin panel at `/admin` with user management, hardware management, and audit logs
+- Audit logging for all admin actions with change history diff
+- Alembic migrations for schema versioning
+
+**Frontend:**
+- Vue 3 + Vite + Pinia + Tailwind CSS
+- Sign-in page with JWT token storage
+- Dashboard with three tabs: Available, My Rentals, All Devices
+- Device cards with rent/return actions and toast notifications
+- Search by name/brand, filter by status and brand
+- Sort by name, brand, or purchase date (ascending/descending)
+- Pagination with ellipsis for large datasets
+- AI chat assistant panel with multi-turn conversation and device recommendations
+- Floating chat button with expandable panel
+
+**Admin Panel (SQLAdmin):**
+- User CRUD with password hashing and validation
+- Hardware CRUD with status badges and repair flag column
+- Audit log viewer with username resolution and change history
+- Dashboard metrics (user count, hardware counts)
+- Boolean filter for repair-flagged devices
+
+---
+
+### ⚡ Shortcuts & "Hacks"
+
+> *What did you build quickly just to make it work?*
+
+- **In-memory rate limiting** — The `RateLimitStore` uses a Python `defaultdict` with timestamps instead of Redis or a database-backed store.
+
+  **The "Why":** Zero external dependencies. No Redis setup needed for local dev. Acceptable for single-server MVP with low traffic.
+
+  **The "Future":** Replace with Redis-backed rate limiter (e.g., `slowapi` or custom Redis sliding window) for horizontal scaling and persistence across restarts.
+
+- **SQLite in production** — The default `DATABASE_URL` points to a local SQLite file.
+
+  **The "Why":** Zero configuration. No PostgreSQL server to install. Perfect for local development and small-scale demos.
+
+  **The "Future":** Swap to PostgreSQL via `asyncpg` + SQLAlchemy async session. Add connection pooling with `pgbouncer`.
+
+- **JWT in localStorage** — The frontend stores the Bearer token in `localStorage` and reads it back on page load.
+
+  **The "Why":** Simplest possible persistence. No cookie management, no CSRF dance for the SPA. Works immediately.
+
+  **The "Future":** Use httpOnly secure cookies for the JWT, or at minimum `sessionStorage` + a refresh token flow. Add an Axios/fetch interceptor to attach the token automatically.
+
+- **Hardware CRUD endpoints are public** — `GET/POST/PUT /api/hardware` have no auth dependency. Only `DELETE` requires admin.
+
+  **The "Why":** Faster iteration during development. No need to log in to test device management.
+
+  **The "Future":** Require authentication for all mutable operations (`POST`, `PUT`, `DELETE`). Add role-based access control (admin vs. regular user).
+
+- **No user registration endpoint** — Users can only be created via the SQLAdmin panel or the `create_admin.py` script.
+
+  **The "Why":** Admin panel was already built. Self-registration wasn't in scope for the initial demo.
+
+  **The "Future":** Add `POST /api/auth/register` with email verification, password strength validation, and rate-limited signup.
+
+- **Form-parameter endpoints** — `POST` and `PUT /api/hardware` accept flat form fields instead of a JSON body with a Pydantic schema.
+
+  **The "Why":** Quick to implement. No extra schema class needed.
+
+  **The "Future":** Use proper Pydantic request schemas (like `HardwareCreate`, `HardwareUpdate`) with field validation, defaults, and OpenAPI docs.
+
+- **No rental history tracking** — Renting a device simply overwrites `assigned_to` and sets status to `"In Use"`. No record of who rented what and when.
+
+  **The "Why":** The `HardwareAsset` model was designed before rental history was a requirement. The audit log in SQLAdmin captures changes but isn't exposed via the API.
+
+  **The "Future":** Create a `Rental` model (user_id, device_id, start_date, end_date) and expose rental history endpoints.
+
+---
+
+### ⚠ Partial / Missing
+
+> *What started but didn't make the cut?*
+
+- **Test coverage** — Only one test file exists (`test_hardware_rent_return.py`) with basic rent/return tests. No tests for auth, AI chatbot, security middleware, or admin panel.
+
+- **CI/CD pipeline** — No GitHub Actions, no automated test runner, no linting/formatting checks. No Dockerfile or docker-compose for reproducible deployments.
+
+- **Frontend admin dashboard** — The admin panel is a separate SQLAdmin interface at `/admin`. There's no admin section in the Vue frontend for user management, device management, or analytics.
+
+- **User profile & settings** — No way for users to change their password, update email, or manage account settings from the frontend.
+
+- **Email notifications** — No email service integration for rental confirmations, return reminders, or account verification.
+
+- **Dark mode** — The frontend uses Tailwind CSS (which has built-in dark mode support) but no dark mode toggle or theme persistence.
+
+- **Loading skeletons** — The dashboard shows a simple spinner during loading. No skeleton placeholders for cards or tables.
+
+- **Refresh token flow** — JWT tokens are stored in localStorage with no automatic refresh. When the token expires, the user must sign in again.
+
+- **Request validation schemas** — Hardware create/update endpoints accept raw form fields instead of Pydantic schemas, so there's no automatic OpenAPI request body documentation.
+
+---
+
+### 🔮 Next Steps (The 24h Roadmap)
+
+> *If you had one more day, what would be your top 3 priorities to fix or improve?*
+
+1. **Add auth protection to hardware CRUD + user registration** — Lock down `POST/PUT /api/hardware` behind `get_current_active_user`, add `POST /api/auth/register` with a Pydantic schema, and add a registration page to the frontend. This closes the biggest security gap and enables self-service user onboarding.
+
+2. **Add rental history tracking** — Create a `Rental` model with user/device/timestamps, expose `GET /api/hardware/{id}/history` and `GET /api/rentals/my` endpoints, and add a "Rental History" tab to the frontend dashboard. This turns the current "overwrite" approach into a proper audit trail.
+
+3. **Add a fetch interceptor + token refresh** — Build a thin Axios/fetch wrapper that automatically attaches the Bearer token, handles 401 responses, and refreshes the token transparently. Add a refresh token endpoint to the backend. This fixes the most brittle part of the frontend auth flow.
+
+---
+
 ## Project Structure
 
 ```

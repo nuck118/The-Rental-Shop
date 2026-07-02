@@ -1,8 +1,10 @@
 import json
 import re
+import logging
 from typing import Optional
 
 from google import genai
+from google.genai import errors as genai_errors
 from google.api_core.exceptions import (
     GoogleAPICallError,
     InvalidArgument,
@@ -15,6 +17,8 @@ from app.core.config import settings
 from app.core.database import SessionLocal
 from app.models.hardware import HardwareAsset
 from app.ai.schemas import ChatbotResponse, DeviceRecommendation
+
+logger = logging.getLogger(__name__)
 
 
 class AIServiceError(Exception):
@@ -53,6 +57,64 @@ class DeviceRecommendationService:
         self.client = genai.Client(api_key=self.api_key)
         self.model = settings.gemini_model
 
+    async def _auto_flag_repair_devices(self) -> None:
+        """Use AI to scan devices for notes suggesting they need repair, and set a flag for admin review."""
+        db = SessionLocal()
+        try:
+            # Fetch all devices that are not already flagged and have non-empty notes
+            devices_to_check = db.query(HardwareAsset).filter(
+                HardwareAsset.repair_flagged.is_(False),
+                HardwareAsset.notes.isnot(None),
+                HardwareAsset.notes != "",
+            ).all()
+
+            if not devices_to_check:
+                return
+
+            logger.debug(f"Auto-flag: Checking {len(devices_to_check)} devices for repair keywords in notes")
+
+            for device in devices_to_check:
+                notes_lower = device.notes.lower()
+                # Quick keyword pre-check before calling Gemini
+                repair_keywords = [
+                    "battery swelling", "liquid damage", "water damage", "cracked screen",
+                    "does not work", "broken", "needs repair", "keyboard sticky",
+                    "do not issue", "faulty", "not working", "damaged",
+                ]
+                has_repair_keyword = any(kw in notes_lower for kw in repair_keywords)
+
+                if not has_repair_keyword:
+                    continue
+
+                # Use Gemini to confirm if this device should be flagged for repair
+                try:
+                    prompt = (
+                        f"Given this hardware device note, determine if the device needs repair or is unsafe to rent.\n\n"
+                        f"Device: {device.name} ({device.brand})\n"
+                        f"Notes: {device.notes}\n\n"
+                        f"Reply with exactly one word: REPAIR if the device needs repair, OK if it's fine to rent."
+                    )
+                    response = await self.client.aio.models.generate_content(
+                        model=self.model,
+                        contents=[prompt],
+                    )
+                    if response.text and "REPAIR" in response.text.strip().upper():
+                        logger.info(f"Auto-flag: Flagging '{device.name}' (ID {device.id}) for admin review — notes: {device.notes}")
+                        device.repair_flagged = True
+                        db.add(device)
+                except Exception as e:
+                    logger.warning(f"Auto-flag: Gemini check failed for device {device.id}: {e}")
+                    # Fallback: if keyword matched and AI failed, still flag it
+                    device.repair_flagged = True
+                    db.add(device)
+
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Auto-flag: Database error: {e}")
+        finally:
+            db.close()
+
     async def chat(
         self,
         user_message: str,
@@ -74,16 +136,18 @@ class DeviceRecommendationService:
             AITimeoutError: If request times out
             AIServiceError: For other API errors
         """
-        import logging
-        logging.basicConfig(level=logging.DEBUG)
-        logger = logging.getLogger(__name__)
-        
         logger.debug(f"Processing message: {user_message[:50]}...")
         logger.debug(f"Conversation history length: {len(conversation_history) if conversation_history else 0}")
         logger.debug(f"API Key configured: {bool(self.api_key)}")
         logger.debug(f"API Key preview: {self.api_key[:10]}...{self.api_key[-4:] if len(self.api_key) > 14 else ''}")
 
-        # Fetch available devices from database
+        # Auto-flag devices with suspicious notes before fetching available devices
+        try:
+            await self._auto_flag_repair_devices()
+        except Exception as e:
+            logger.warning(f"Auto-flag skipped due to error: {e}")
+
+        # Fetch available devices from database (now excludes newly-flagged repair devices)
         available_devices = await self._fetch_available_devices()
         logger.debug(f"Found {len(available_devices)} available devices")
 
@@ -137,6 +201,16 @@ class DeviceRecommendationService:
             raise AIAuthenticationError(
                 f"Invalid or expired API credentials: {str(e)}"
             ) from e
+
+        except genai_errors.ClientError as e:
+            # Modern genai SDK raises ClientError for 4xx responses (including quota/rate limits)
+            error_body = str(e)
+            error_lower = error_body.lower()
+            if "429" in error_body or "rate limit" in error_lower or "quota" in error_lower or "resource_exhausted" in error_lower:
+                raise AIRateLimitError(f"API rate limit or quota exceeded: {str(e)}") from e
+            if "401" in error_body or "invalid api key" in error_lower or "unauthenticated" in error_lower:
+                raise AIAuthenticationError(f"API authentication failed: {str(e)}") from e
+            raise AIServiceError(f"Gemini API client error: {str(e)}") from e
 
         except InvalidArgument as e:
             error_msg = str(e).lower()
