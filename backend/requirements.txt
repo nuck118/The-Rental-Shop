@@ -12,9 +12,9 @@ sqlitecloud==0.0.84
 sqladmin>=0.20.0
 wtforms>=3.1.1
 
-# Validation / Settings
-pydantic==2.10.4
-pydantic-settings==2.7.1
+# Validation / Settings (Environment markers added to bypass Python 3.14 build errors)
+pydantic==2.10.4; python_version < "3.14"
+pydantic-settings==2.7.1; python_version < "3.14"
 
 # Authentication
 pyjwt==2.8.0
@@ -31,4 +31,4 @@ itsdangerous==2.2.0
 fastapi-csrf-protect==1.0.7
 
 # Testing
-pytest==8.0.0# cache bust
+pytest==8.0.0
