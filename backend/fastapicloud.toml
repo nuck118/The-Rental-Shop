@@ -1,7 +1,7 @@
 [project]
 entrypoint = "app.main:create_app"
 app_dir = "."
-python_version = "3.14"
+python_version = "3.12"
 
 [env]
 # These will be overridden by FastAPI Cloud env settings
