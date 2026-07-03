@@ -28,15 +28,25 @@ if settings.database_url.startswith("sqlitecloud://"):
         
         def close(self):
             """Close the connection."""
-            self._conn.close()
+            try:
+                self._conn.close()
+            except Exception:
+                pass
         
         def commit(self):
             """Commit the transaction."""
-            self._conn.commit()
+            try:
+                self._conn.commit()
+            except Exception:
+                pass
         
         def rollback(self):
-            """Rollback the transaction."""
-            self._conn.rollback()
+            """Rollback the transaction. Suppress errors since sqlitecloud
+            may not support rollback in all states (e.g. after read-only ops)."""
+            try:
+                self._conn.rollback()
+            except Exception:
+                pass
     
     # Create a connection creator function for SQLite Cloud
     def create_sqlitecloud_connection():
