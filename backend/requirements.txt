@@ -1,5 +1,6 @@
 # ASGI / Web
 fastapi==0.115.5
+fastapi[standard]==0.115.5
 uvicorn[standard]==0.32.1
 
 # ORM / Database
@@ -8,8 +9,8 @@ alembic==1.13.1
 sqlitecloud==0.0.84
 
 # Admin Panel
-sqladmin==0.1.6
-wtforms==3.1.1
+sqladmin>=0.20.0
+wtforms>=3.1.1
 
 # Validation / Settings
 pydantic==2.10.3
