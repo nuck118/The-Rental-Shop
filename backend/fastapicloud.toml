@@ -1,7 +1,15 @@
 [project]
+name = "the-rental-shop"
+version = "0.1.0"
+description = "The Rental Shop Backend API"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.fastapi]
 entrypoint = "app.main:app"
 app_dir = "."
 python_version = "3.11"
+
 [env]
 DATABASE_URL = "sqlitecloud://host:port/database?apikey=your-production-api-key"
 GEMINI_API_KEY = "your-gemini-api-key"
