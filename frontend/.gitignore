@@ -1,0 +1,6 @@
+.vercel
+.env
+.env.local
+.env.*.local
+
+# .env.production is tracked for deployment reference
