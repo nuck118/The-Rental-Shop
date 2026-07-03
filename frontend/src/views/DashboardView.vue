@@ -5,7 +5,7 @@ import { useAuthStore } from "../stores/auth";
 import { useDeviceStore } from "../stores/device";
 import DeviceCard from "../components/DeviceCard.vue";
 import ChatAssistant from "../components/ChatAssistant.vue";
-import { Package, Truck, LogOut, X, Bot, ChevronLeft, ChevronRight, Search, CheckCircle, AlertCircle, ArrowUpDown } from "lucide-vue-next";
+import { Package, Truck, LogOut, X, Bot, ChevronLeft, ChevronRight, Search, CheckCircle, AlertCircle, ArrowUpDown, Menu, Filter } from "lucide-vue-next";
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -18,6 +18,7 @@ const showChatButton = ref(true);
 const showStatusDropdown = ref(false);
 const showBrandDropdown = ref(false);
 const showSortDropdown = ref(false);
+const showMobileFilters = ref(false);
 const sortField = ref("name");
 const sortDirection = ref("asc");
 
@@ -198,17 +199,40 @@ const handlePageChange = (page) => {
         <button @click="toast = null" class="ml-2 opacity-60 hover:opacity-100"><X class="w-4 h-4" /></button>
       </div>
     </transition>
+    
     <!-- Header with Tabs -->
     <header class="bg-white">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div class="flex items-center gap-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div class="flex items-center gap-3">
             <div>
-              <h1 class="text-2xl font-light text-neutral-900 tracking-tight">The Rental Shop</h1>
+              <h1 class="text-xl sm:text-2xl font-light text-neutral-900 tracking-tight">The Rental Shop</h1>
               <p class="text-xs text-neutral-500 font-light mt-1">Hardware Rental Management</p>
             </div>
-            
-            <!-- Navigation Tabs -->
+          </div>
+
+          <!-- Mobile Tab Selector -->
+          <div class="sm:hidden w-full">
+            <div class="grid grid-cols-3 gap-1 bg-neutral-100 rounded-lg p-1">
+              <button
+                v-for="tab in tabs"
+                :key="tab.id"
+                @click="switchTab(tab.id)"
+                :class="[
+                  'px-2 py-2.5 font-medium text-xs transition rounded-md flex items-center justify-center gap-1.5',
+                  activeTab === tab.id
+                    ? 'bg-white text-primary-600 shadow-sm'
+                    : 'text-neutral-600 hover:text-neutral-900',
+                ]"
+              >
+                <component :is="tab.icon" class="w-3.5 h-3.5" />
+                <span class="truncate">{{ tab.label }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Desktop Navigation Tabs -->
+          <div class="hidden sm:flex items-center gap-4">
             <div class="flex gap-6">
               <button
                 v-for="tab in tabs"
@@ -227,7 +251,7 @@ const handlePageChange = (page) => {
             </div>
           </div>
 
-          <div class="flex items-center gap-4">
+          <div class="flex items-center gap-3">
             <!-- Profile Menu -->
             <div class="relative">
               <button
@@ -237,7 +261,7 @@ const handlePageChange = (page) => {
                 <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center text-white text-sm font-medium">
                   {{ authStore.user?.username?.[0]?.toUpperCase() || "U" }}
                 </div>
-                <span class="text-sm text-neutral-700">{{ authStore.user?.username || "User" }}</span>
+                <span class="text-sm text-neutral-700 hidden sm:inline">{{ authStore.user?.username || "User" }}</span>
               </button>
 
               <div
@@ -261,7 +285,8 @@ const handlePageChange = (page) => {
     <!-- Filter Bar -->
     <div class="bg-white border-b border-neutral-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div class="flex flex-wrap gap-4 items-center">
+        <!-- Desktop Filters -->
+        <div class="hidden sm:flex flex-wrap gap-4 items-center">
           <!-- Search -->
           <div class="relative flex-1 min-w-[200px]">
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
@@ -335,7 +360,7 @@ const handlePageChange = (page) => {
             >
               <span class="text-neutral-700 flex items-center gap-2">
                 <ArrowUpDown class="w-4 h-4 text-neutral-400" />
-                Sort by {{ sortField.value }} ({{ sortDirection.value === 'asc' ? 'Ascending' : 'Descending' }})
+                Sort by {{ sortField.value }}
               </span>
               <ChevronRight class="w-4 h-4 text-neutral-400 rotate-90" />
             </button>
@@ -355,11 +380,83 @@ const handlePageChange = (page) => {
             </div>
           </div>
         </div>
+
+        <!-- Mobile Filters -->
+        <div class="sm:hidden space-y-3">
+          <!-- Search -->
+          <div class="relative">
+            <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Search devices..."
+              class="w-full pl-9 pr-4 py-2.5 border border-neutral-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
+            />
+          </div>
+
+          <!-- Mobile Filter Button -->
+          <button
+            @click="showMobileFilters = !showMobileFilters"
+            class="flex items-center justify-center gap-2 w-full px-4 py-2.5 border border-neutral-200 rounded-lg text-sm text-neutral-700 bg-white"
+          >
+            <Filter class="w-4 h-4" />
+            Filters
+          </button>
+
+          <!-- Mobile Filter Panel -->
+          <div v-if="showMobileFilters" class="grid grid-cols-2 gap-2">
+            <div class="relative">
+              <button
+                @click="showStatusDropdown = !showStatusDropdown"
+                class="w-full flex items-center justify-between gap-2 px-3 py-2 border border-neutral-200 rounded-lg text-xs bg-white"
+              >
+                <span class="truncate">{{ selectedStatus === 'all' ? 'Status' : selectedStatus }}</span>
+                <ChevronRight class="w-3 h-3 text-neutral-400 flex-shrink-0" />
+              </button>
+              <div
+                v-if="showStatusDropdown"
+                class="absolute top-full left-0 mt-1 w-full bg-white rounded-lg border border-neutral-200 shadow-lg z-50"
+              >
+                <button
+                  v-for="status in statusOptions"
+                  :key="status"
+                  @click="handleStatusSelect(status)"
+                  class="w-full text-left px-3 py-2 text-xs text-neutral-700 hover:bg-neutral-50"
+                >
+                  {{ status === 'all' ? 'All Status' : status }}
+                </button>
+              </div>
+            </div>
+
+            <div class="relative">
+              <button
+                @click="showBrandDropdown = !showBrandDropdown"
+                class="w-full flex items-center justify-between gap-2 px-3 py-2 border border-neutral-200 rounded-lg text-xs bg-white"
+              >
+                <span class="truncate">{{ selectedBrand === 'all' ? 'Brand' : selectedBrand }}</span>
+                <ChevronRight class="w-3 h-3 text-neutral-400 flex-shrink-0" />
+              </button>
+              <div
+                v-if="showBrandDropdown"
+                class="absolute top-full left-0 mt-1 w-full bg-white rounded-lg border border-neutral-200 shadow-lg z-50"
+              >
+                <button
+                  v-for="brand in brands"
+                  :key="brand"
+                  @click="handleBrandSelect(brand)"
+                  class="w-full text-left px-3 py-2 text-xs text-neutral-700 hover:bg-neutral-50"
+                >
+                  {{ brand === 'all' ? 'All Brands' : brand }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       <div v-if="deviceStore.loading" class="text-center py-12">
         <div class="inline-block">
           <div class="animate-spin rounded-full h-8 w-8 border-2 border-neutral-300 border-t-primary-600"></div>
@@ -378,7 +475,7 @@ const handlePageChange = (page) => {
           <Package class="w-12 h-12 text-neutral-300 mx-auto mb-4" />
           <p class="text-neutral-600 text-sm">No available devices at the moment</p>
         </div>
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           <DeviceCard
             v-for="device in paginatedDevices"
             :key="device.id"
@@ -395,7 +492,7 @@ const handlePageChange = (page) => {
           <Truck class="w-12 h-12 text-neutral-300 mx-auto mb-4" />
           <p class="text-neutral-600 text-sm">You don't have any rented devices</p>
         </div>
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           <DeviceCard
             v-for="device in paginatedDevices"
             :key="device.id"
@@ -412,7 +509,7 @@ const handlePageChange = (page) => {
           <Package class="w-12 h-12 text-neutral-300 mx-auto mb-4" />
           <p class="text-neutral-600 text-sm">No devices found</p>
         </div>
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           <DeviceCard
             v-for="device in paginatedDevices"
             :key="device.id"
@@ -424,13 +521,13 @@ const handlePageChange = (page) => {
       </div>
 
       <!-- Pagination -->
-      <div v-if="filteredTotalPages > 1" class="mt-8 flex items-center justify-center gap-2">
+      <div v-if="filteredTotalPages > 1" class="mt-6 sm:mt-8 flex items-center justify-center gap-1.5 sm:gap-2">
         <button
           @click="handlePageChange(deviceStore.currentPage - 1)"
           :disabled="deviceStore.currentPage === 1"
-          class="p-2 rounded-lg hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          class="p-1.5 sm:p-2 rounded-lg hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
         >
-          <ChevronLeft class="w-5 h-5 text-neutral-600" />
+          <ChevronLeft class="w-4 h-4 sm:w-5 sm:h-5 text-neutral-600" />
         </button>
         
         <button
@@ -438,11 +535,11 @@ const handlePageChange = (page) => {
           :key="page"
           @click="typeof page === 'number' ? handlePageChange(page) : null"
           :class="[
-            'px-4 py-2 rounded-lg text-sm font-medium transition',
+            'px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition',
             typeof page === 'number' && deviceStore.currentPage === page
               ? 'bg-primary-600 text-white'
               : 'hover:bg-neutral-100 text-neutral-600',
-            typeof page !== 'number' ? 'cursor-default' : '',
+            typeof page !== 'number' ? 'cursor-default px-2' : '',
           ]"
         >
           {{ page }}
@@ -451,9 +548,9 @@ const handlePageChange = (page) => {
         <button
           @click="handlePageChange(deviceStore.currentPage + 1)"
           :disabled="deviceStore.currentPage === filteredTotalPages"
-          class="p-2 rounded-lg hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          class="p-1.5 sm:p-2 rounded-lg hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
         >
-          <ChevronRight class="w-5 h-5 text-neutral-600" />
+          <ChevronRight class="w-4 h-4 sm:w-5 sm:h-5 text-neutral-600" />
         </button>
       </div>
     </main>
@@ -462,30 +559,30 @@ const handlePageChange = (page) => {
     <button
       v-if="showChatButton"
       @click="showChatPanel = !showChatPanel"
-      class="fixed bottom-6 right-6 w-14 h-14 bg-primary-600 hover:bg-primary-700 text-white rounded-full shadow-lg flex items-center justify-center transition hover:scale-110 z-40"
+      class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-12 h-12 sm:w-14 sm:h-14 bg-primary-600 hover:bg-primary-700 text-white rounded-full shadow-lg flex items-center justify-center transition hover:scale-110 z-40"
       title="AI Assistant"
     >
-      <Bot class="w-6 h-6" />
+      <Bot class="w-5 h-5 sm:w-6 sm:h-6" />
     </button>
 
-      <!-- AI Chat Panel -->
-      <div
-        v-if="showChatPanel"
-        class="fixed bottom-24 right-6 w-[400px] h-[600px] max-h-[calc(100vh-120px)] bg-white rounded-2xl shadow-2xl border border-neutral-200 overflow-hidden flex flex-col z-50 transition-all duration-300 transform origin-bottom-right"
-      >
-        <div class="p-4 bg-primary-600 text-white flex justify-between items-center">
-          <div class="flex items-center gap-2">
-            <Bot class="w-5 h-5" />
-            <h3 class="font-medium">AI Assistant</h3>
-          </div>
-          <button @click="showChatPanel = false" class="text-primary-100 hover:text-white transition">
-            <X class="w-5 h-5" />
-          </button>
+    <!-- AI Chat Panel -->
+    <div
+      v-if="showChatPanel"
+      class="fixed bottom-20 right-4 left-4 sm:bottom-24 sm:right-6 sm:left-auto w-auto sm:w-[350px] md:w-[400px] h-[500px] sm:h-[600px] max-h-[calc(100vh-100px)] sm:max-h-[calc(100vh-120px)] bg-white rounded-2xl shadow-2xl border border-neutral-200 overflow-hidden flex flex-col z-50 transition-all duration-300 transform origin-bottom"
+    >
+      <div class="p-3 sm:p-4 bg-primary-600 text-white flex justify-between items-center">
+        <div class="flex items-center gap-2">
+          <Bot class="w-4 h-4 sm:w-5 sm:h-5" />
+          <h3 class="font-medium text-sm sm:text-base">AI Assistant</h3>
         </div>
-        <div class="flex-1 overflow-hidden">
-          <ChatAssistant :token="authStore.token" @rent="handleRent" />
-        </div>
+        <button @click="showChatPanel = false" class="text-primary-100 hover:text-white transition">
+          <X class="w-4 h-4 sm:w-5 sm:h-5" />
+        </button>
       </div>
+      <div class="flex-1 overflow-hidden">
+        <ChatAssistant :token="authStore.token" @rent="handleRent" />
+      </div>
+    </div>
   </div>
 </template>
 

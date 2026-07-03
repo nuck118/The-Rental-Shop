@@ -37,57 +37,57 @@ const handleKeydown = (e) => {
 
 <template>
   <div class="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
-    <div class="w-full max-w-md">
+    <div class="w-full max-w-sm sm:max-w-md">
       <!-- Header -->
-      <div class="text-center mb-12">
-        <div class="inline-flex items-center justify-center w-12 h-12 bg-primary-600 rounded-lg mb-4">
-          <Lock class="w-6 h-6 text-white" />
+      <div class="text-center mb-8 sm:mb-12">
+        <div class="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-primary-600 rounded-lg mb-3 sm:mb-4">
+          <Lock class="w-5 h-5 sm:w-6 sm:h-6 text-white" />
         </div>
-        <h1 class="text-3xl font-light text-neutral-900 tracking-tight">The Rental Shop</h1>
-        <p class="text-neutral-500 mt-2 text-sm font-light">Hardware Rental Management</p>
+        <h1 class="text-2xl sm:text-3xl font-light text-neutral-900 tracking-tight">The Rental Shop</h1>
+        <p class="text-neutral-500 mt-1.5 sm:mt-2 text-xs sm:text-sm font-light">Hardware Rental Management</p>
       </div>
 
       <!-- Form Card -->
-      <div class="bg-white rounded-lg border border-neutral-200 p-8 shadow-sm">
-        <form @submit.prevent="handleSignin" class="space-y-6">
+      <div class="bg-white rounded-lg border border-neutral-200 p-5 sm:p-8 shadow-sm">
+        <form @submit.prevent="handleSignin" class="space-y-5 sm:space-y-6">
           <!-- Username Field -->
           <div>
-            <label for="username" class="block text-sm font-medium text-neutral-700 mb-2">
+            <label for="username" class="block text-xs sm:text-sm font-medium text-neutral-700 mb-1.5 sm:mb-2">
               Username
             </label>
             <div class="relative">
-              <Mail class="absolute left-3 top-3 w-5 h-5 text-neutral-400" />
+              <Mail class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-neutral-400" />
               <input
                 id="username"
                 v-model="username"
                 type="text"
                 placeholder="Enter your username"
                 @keydown="handleKeydown"
-                class="w-full pl-10 pr-4 py-2.5 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition text-sm"
+                class="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition text-xs sm:text-sm"
               />
             </div>
           </div>
 
           <!-- Password Field -->
           <div>
-            <label for="password" class="block text-sm font-medium text-neutral-700 mb-2">
+            <label for="password" class="block text-xs sm:text-sm font-medium text-neutral-700 mb-1.5 sm:mb-2">
               Password
             </label>
             <div class="relative">
-              <Lock class="absolute left-3 top-3 w-5 h-5 text-neutral-400" />
+              <Lock class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-neutral-400" />
               <input
                 id="password"
                 v-model="password"
                 type="password"
                 placeholder="Enter your password"
                 @keydown="handleKeydown"
-                class="w-full pl-10 pr-4 py-2.5 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition text-sm"
+                class="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition text-xs sm:text-sm"
               />
             </div>
           </div>
 
           <!-- Error Message -->
-          <div v-if="error" class="bg-primary-50 border border-primary-200 text-primary-700 px-4 py-3 rounded-lg text-sm">
+          <div v-if="error" class="bg-primary-50 border border-primary-200 text-primary-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm">
             {{ error }}
           </div>
 
@@ -95,14 +95,12 @@ const handleKeydown = (e) => {
           <button
             type="submit"
             :disabled="loading"
-            class="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-neutral-300 text-white font-medium py-2.5 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2 text-sm"
+            class="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-neutral-300 text-white font-medium py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg transition duration-200 flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm"
           >
-            <LogIn class="w-4 h-4" />
+            <LogIn class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             {{ loading ? "Signing in..." : "Sign In" }}
           </button>
         </form>
-
-
       </div>
     </div>
   </div>

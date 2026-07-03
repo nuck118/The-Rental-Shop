@@ -30,28 +30,28 @@ const getStatusColor = (status) => {
 </script>
 
 <template>
-  <div class="bg-white rounded-lg border border-neutral-200 hover:border-neutral-300 hover:shadow-sm transition p-4">
+  <div class="bg-white rounded-lg border border-neutral-200 hover:border-neutral-300 hover:shadow-sm transition p-4 flex flex-col h-full">
     <div class="flex justify-between items-start mb-3">
-      <div class="flex-1">
-        <h3 class="font-medium text-neutral-900 text-sm">{{ device.name }}</h3>
-        <p class="text-xs text-neutral-500 mt-1">{{ device.brand }}</p>
+      <div class="flex-1 min-w-0">
+        <h3 class="font-medium text-neutral-900 text-sm sm:text-sm truncate">{{ device.name }}</h3>
+        <p class="text-xs text-neutral-500 mt-1 truncate">{{ device.brand }}</p>
       </div>
-      <span :class="['px-2 py-1 rounded-full text-xs font-medium', getStatusColor(device.status)]">
+      <span :class="['px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ml-2', getStatusColor(device.status)]">
         {{ device.status }}
       </span>
     </div>
 
-    <div class="space-y-2 mb-4 text-xs text-neutral-600">
+    <div class="space-y-2 mb-4 text-xs text-neutral-600 flex-1">
       <p v-if="device.purchase_date">
         <span class="font-medium text-neutral-700">Purchased:</span> {{ new Date(device.purchase_date).toLocaleDateString() }}
       </p>
       <p v-if="device.assigned_to">
         <span class="font-medium text-neutral-700">Assigned to:</span> {{ device.assigned_to }}
       </p>
-      <p v-if="device.notes" class="text-neutral-700">{{ device.notes }}</p>
+      <p v-if="device.notes" class="text-neutral-700 line-clamp-2">{{ device.notes }}</p>
     </div>
 
-    <div class="flex gap-2">
+    <div class="flex gap-2 mt-auto">
       <button
         v-if="showRentButton"
         @click="$emit('rent', device)"
