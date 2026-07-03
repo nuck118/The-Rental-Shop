@@ -1,5 +1,6 @@
 """CSRF protection configuration using fastapi-csrf-protect."""
 
+import os
 from pydantic_settings import BaseSettings
 from fastapi_csrf_protect import CsrfProtect
 
@@ -42,10 +43,21 @@ def get_csrf_config() -> CsrfSettings:
     """Load CSRF configuration from application settings."""
     from app.core.config import settings
 
-    # Use lax SameSite for local development; none requires secure=True which
-    # breaks plain-HTTP local testing. Production should use secure=True.
-    return CsrfSettings(
-        secret_key=settings.secret_key,
-        cookie_samesite="lax",
-        cookie_secure=False,
-    )
+    # Check if we're in production (HTTPS required for cross-domain cookies)
+    is_production = os.environ.get("ENVIRONMENT") == "production"
+    
+    # For cross-domain requests (vercel.app -> onrender.com), we need SameSite=None and Secure
+    if is_production:
+        return CsrfSettings(
+            secret_key=settings.secret_key,
+            cookie_samesite="none",
+            cookie_secure=True,
+        )
+    else:
+        # Use lax SameSite for local development; none requires secure=True which
+        # breaks plain-HTTP local testing. Production should use secure=True.
+        return CsrfSettings(
+            secret_key=settings.secret_key,
+            cookie_samesite="lax",
+            cookie_secure=False,
+        )
