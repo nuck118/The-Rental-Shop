@@ -25,8 +25,8 @@ class Settings(BaseSettings):
     secret_key: str | None = None
     rate_limit_window: int = 60
     rate_limit_max_requests: int = 100
-    csrf_enabled: bool = False  # Temporarily disabled to debug CORS
-    jwt_enabled: bool = True
+    csrf_enabled: bool = False  # Disabled for demo
+    jwt_enabled: bool = False  # Disabled for demo
 
     def __init__(self, **data):
         super().__init__(**data)
