@@ -27,7 +27,7 @@ class Settings(BaseSettings):
             origins.append(f"https://{vercel_url}")
         return origins
 
-    cors_origins: list[str] = None
+    cors_origins: list[str] | None = None
 
     # Security - Generate a strong random key if not provided in .env
     secret_key: str | None = None
