@@ -119,10 +119,17 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         """Main middleware dispatch handler."""
 
-        # Allow CORS preflight requests to pass through immediately with no security checks
-        # Let CORSMiddleware handle these requests
+        # Handle CORS preflight requests directly - return 200 with CORS headers
         if request.method == "OPTIONS":
-            return await call_next(request)
+            response = JSONResponse(content={"detail": "OK"}, status_code=200)
+            origin = request.headers.get("origin")
+            if origin:
+                response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+            response.headers["Access-Control-Allow-Headers"] = "*"
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Max-Age"] = "86400"
+            return response
 
         # 1. Rate Limiting Check
         client_id = self._get_client_identifier(request)
