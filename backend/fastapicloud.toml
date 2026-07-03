@@ -1,13 +1,13 @@
 [project]
-entrypoint = "app.main:create_app"
+entrypoint = "app.main:app"
 app_dir = "."
-python_version = "3.11.9"
+python_version = "3.11"
 
 [env]
-# These will be overridden by FastAPI Cloud env settings
 DATABASE_URL = "sqlitecloud://host:port/database?apikey=your-production-api-key"
 GEMINI_API_KEY = "your-gemini-api-key"
 CORS_ORIGINS = '["https://your-frontend-domain.com"]'
 CSRF_ENABLED = "true"
 JWT_ENABLED = "true"
 SECRET_KEY = "generate-a-new-secret-key-in-production"
+PYO3_USE_ABI3_FORWARD_COMPATIBILITY = "1"
