@@ -6,6 +6,7 @@ requires-python = ">=3.11"
 dependencies = []
 
 [tool.fastapi]
+# This points directly to the app object at the bottom of main.py
 entrypoint = "app.main:app"
 app_dir = "."
 python_version = "3.11"
