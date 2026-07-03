@@ -25,6 +25,16 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     app = FastAPI(title="The Rental Shop API", lifespan=lifespan)
 
+    # CORS Middleware - MUST be added first (runs last) to handle preflight requests
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+        allow_headers=["*"],
+        expose_headers=["X-Total-Count", "X-Page-Count"],
+    )
+
     # Security Middleware
     app.add_middleware(
         SecurityMiddleware,
@@ -33,16 +43,6 @@ def create_app() -> FastAPI:
         rate_limit_max_requests=settings.rate_limit_max_requests,
         csrf_enabled=settings.csrf_enabled,
         jwt_enabled=settings.jwt_enabled,
-    )
-
-    # CORS Middleware
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-        allow_headers=["*"],
-        expose_headers=["X-Total-Count", "X-Page-Count"],
     )
 
     # Include routers
