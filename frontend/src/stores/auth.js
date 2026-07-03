@@ -33,18 +33,20 @@ export const useAuthStore = defineStore("auth", () => {
 
   const login = async (username, password) => {
     try {
-      // Ensure we have a CSRF token before submitting the login form
+      // Fetch a CSRF token (returns empty string if CSRF is disabled on backend)
       const currentCsrfToken = csrfToken.value || (await fetchCsrfToken());
-      if (!currentCsrfToken) {
-        throw new Error("CSRF token not available");
+
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      // Only send CSRF header if we have a valid token
+      if (currentCsrfToken) {
+        headers["X-CSRF-Token"] = currentCsrfToken;
       }
 
       const response = await fetch("/api/auth/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": currentCsrfToken,
-        },
+        headers,
         credentials: "include",
         body: JSON.stringify({ username, password }),
       });
