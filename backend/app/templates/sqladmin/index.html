@@ -1,0 +1,94 @@
+{% extends "sqladmin/layout.html" %}
+
+{% block content_header %}
+<div class="d-flex align-items-center justify-content-between mb-5 border-bottom border-dark pb-3">
+  <div>
+    <h1 class="mb-0 text-uppercase" style="letter-spacing: 0.05em; font-size: 2.5rem; font-weight: 700;">Dashboard</h1>
+    <p class="text-secondary mb-0 mt-2" style="font-family: var(--bs-body-font-family); font-size: 0.95rem;">
+      THE RENTAL SHOP &mdash; System Overview
+    </p>
+  </div>
+  <div class="text-end">
+    <div class="border border-dark px-3 py-1 d-inline-block text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.1em; font-weight: 600;">
+      <span class="d-inline-block bg-dark me-2" style="width:6px; height:6px; vertical-align: middle;"></span>
+      Operational
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% set metrics = get_dashboard_metrics() %}
+
+<!-- ─── Editorial KPI Typography Blocks ───────────────────── -->
+<div class="row g-0 mb-5 border-top border-dark border-start">
+  
+  <div class="col-sm-6 col-xl-3 border-end border-bottom border-dark p-5 bg-white">
+    <div class="text-uppercase text-secondary mb-4" style="font-size: 0.75rem; letter-spacing: 0.1em; font-weight: 600;">Total Users</div>
+    <div class="fw-bold text-dark" style="font-family: var(--bs-heading-font-family); font-size: 4.5rem; line-height: 1;">
+      {{ metrics.users_count }}
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3 border-end border-bottom border-dark p-5 bg-white">
+    <div class="text-uppercase text-secondary mb-4" style="font-size: 0.75rem; letter-spacing: 0.1em; font-weight: 600;">Available Assets</div>
+    <div class="fw-bold text-dark" style="font-family: var(--bs-heading-font-family); font-size: 4.5rem; line-height: 1;">
+      {{ metrics.available_hardware_count }}
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3 border-end border-bottom border-dark p-5 bg-white">
+    <div class="text-uppercase text-secondary mb-4" style="font-size: 0.75rem; letter-spacing: 0.1em; font-weight: 600;">In Repair</div>
+    <div class="fw-bold text-dark" style="font-family: var(--bs-heading-font-family); font-size: 4.5rem; line-height: 1;">
+      {{ metrics.repair_hardware_count }}
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3 border-end border-bottom border-dark p-5 bg-white">
+    <div class="text-uppercase text-secondary mb-4" style="font-size: 0.75rem; letter-spacing: 0.1em; font-weight: 600;">Total Inventory</div>
+    <div class="fw-bold text-dark" style="font-family: var(--bs-heading-font-family); font-size: 4.5rem; line-height: 1;">
+      {{ metrics.hardware_count }}
+    </div>
+  </div>
+
+</div>
+
+<!-- ─── Editorial Navigation Directory ────────────────────── -->
+<div class="mb-5">
+  <h4 class="text-uppercase border-bottom border-dark pb-2 mb-4" style="letter-spacing: 0.05em; font-size: 1rem; font-weight: 600;">Directory</h4>
+  <div class="row g-0 border-top border-start border-dark">
+    
+    <div class="col-sm-4 border-end border-bottom border-dark">
+      <a href="{{ url_for('admin:list', identity='user') }}" class="d-block p-4 text-decoration-none text-dark bg-white" style="transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f8f9fa'" onmouseout="this.style.backgroundColor='#ffffff'">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-uppercase" style="font-size: 0.85rem; font-weight: 600; letter-spacing: 0.05em;">Manage Users</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </div>
+        <p class="text-secondary mb-0" style="font-size: 0.85rem; line-height: 1.5;">View, create, and manage system administrators and registered users.</p>
+      </a>
+    </div>
+
+    <div class="col-sm-4 border-end border-bottom border-dark">
+      <a href="{{ url_for('admin:list', identity='hardware-asset') }}" class="d-block p-4 text-decoration-none text-dark bg-white" style="transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f8f9fa'" onmouseout="this.style.backgroundColor='#ffffff'">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-uppercase" style="font-size: 0.85rem; font-weight: 600; letter-spacing: 0.05em;">Hardware Assets</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </div>
+        <p class="text-secondary mb-0" style="font-size: 0.85rem; line-height: 1.5;">Track inventory status, assignments, and repair cycles.</p>
+      </a>
+    </div>
+
+    <div class="col-sm-4 border-end border-bottom border-dark">
+      <a href="{{ url_for('admin:list', identity='audit-log') }}" class="d-block p-4 text-decoration-none text-dark bg-white" style="transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f8f9fa'" onmouseout="this.style.backgroundColor='#ffffff'">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-uppercase" style="font-size: 0.85rem; font-weight: 600; letter-spacing: 0.05em;">Audit Logs</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </div>
+        <p class="text-secondary mb-0" style="font-size: 0.85rem; line-height: 1.5;">Immutable history of all system changes and interactions.</p>
+      </a>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

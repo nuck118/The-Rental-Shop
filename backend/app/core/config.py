@@ -1,0 +1,39 @@
+from pydantic_settings import BaseSettings, SettingsConfigDict
+import os
+import secrets
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    # Database
+    database_url: str = "rental_shop.db"
+
+    # AI
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-flash"
+
+    # CORS
+    cors_origins: list[str] = ["http://localhost:5173"]
+
+    # Security - Generate a strong random key if not provided in .env
+    secret_key: str | None = None
+    rate_limit_window: int = 60
+    rate_limit_max_requests: int = 100
+    csrf_enabled: bool = True
+    jwt_enabled: bool = True
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        # If secret_key is not set, check if we're in development
+        if not self.secret_key or self.secret_key == "your-secret-key-change-in-production":
+            if os.environ.get("ENVIRONMENT") == "production":
+                raise ValueError(
+                    "SECRET_KEY must be set in .env for production environment. "
+                    "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(32))\""
+                )
+            # Use a stable development key
+            self.secret_key = "dev-key-never-use-in-production-change-in-env"
+
+
+settings = Settings()

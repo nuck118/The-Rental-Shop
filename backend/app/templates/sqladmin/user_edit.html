@@ -1,0 +1,10 @@
+{% extends "sqladmin/edit.html" %}
+
+{% block content %}
+<div class="admin-form-section">
+  <p class="admin-muted mb-3">
+    Update the account details below. Leave the password blank to keep the current password unchanged.
+  </p>
+  {{ super() }}
+</div>
+{% endblock %}

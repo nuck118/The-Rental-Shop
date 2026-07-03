@@ -1,0 +1,40 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+
+# Piccolo
+.piccolo/
+
+# SQLite
+*.db
+*.sqlite3
+
+# Environment
+.env
+.env.example
+.env.local
+.env.*.local
+
+# Node / Frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Scripts
+backend/scripts/
+
+# IDE
+.vscode/
+.idea/
+*.swp

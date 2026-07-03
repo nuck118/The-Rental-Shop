@@ -1,0 +1,10 @@
+{% extends "sqladmin/create.html" %}
+
+{% block content %}
+<div class="admin-form-section">
+  <p class="admin-muted mb-3">
+    Create a new user account. All fields marked with validation errors must be corrected before saving.
+  </p>
+  {{ super() }}
+</div>
+{% endblock %}
