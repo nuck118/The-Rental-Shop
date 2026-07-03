@@ -50,6 +50,11 @@ def create_app() -> FastAPI:
     app.include_router(hardware_router)
     app.include_router(ai_router)
 
+    # Health check endpoint
+    @app.get("/health")
+    async def health_check():
+        return {"status": "healthy"}
+
     # Global CSRF exception handler
     @app.exception_handler(CsrfProtectError)
     async def csrf_protect_exception_handler(request: Request, exc: CsrfProtectError):
