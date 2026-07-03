@@ -17,7 +17,8 @@ class Settings(BaseSettings):
     cors_origins: list[str] = [
         "http://localhost:5173",
         "https://therentalshop.vercel.app",
-        "https://the-rental-shop.onrender.com"
+        "https://the-rental-shop.onrender.com",
+        "*",  # Temporary - allow all origins for debugging
     ]
 
     # Security - Generate a strong random key if not provided in .env
