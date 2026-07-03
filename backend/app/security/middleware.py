@@ -219,6 +219,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             "/openapi.json",
             "/redoc",
             "/api/auth/login",
+            "/api/auth/csrf-token",
             "/api/ai/health",
             "/api/ai/chat",
             "/admin",
