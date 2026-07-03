@@ -31,7 +31,7 @@ class LoginResponse(BaseModel):
     summary="Get CSRF token",
     description="Generate and return a CSRF token cookie for state-changing requests.",
 )
-def get_csrf_token(
+async def get_csrf_token(
     request: Request,
     csrf_protect: CsrfProtect = Depends(),
 ):
@@ -41,6 +41,13 @@ def get_csrf_token(
     The client must read the plain token from the response body and send it back
     in the `X-CSRF-Token` header on subsequent POST/PUT/PATCH/DELETE requests.
     """
+    # If CSRF is disabled, return a no-op response
+    if not settings.csrf_enabled:
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={"csrf_token": ""},
+        )
+
     csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
     response = JSONResponse(
         status_code=status.HTTP_200_OK,
@@ -97,7 +104,9 @@ async def login(
     }
     ```
     """
-    await csrf_protect.validate_csrf(request)
+    # Only validate CSRF if CSRF protection is enabled
+    if settings.csrf_enabled:
+        await csrf_protect.validate_csrf(request)
 
     user = db.query(User).filter(User.username == login_request.username).first()
 
@@ -133,7 +142,8 @@ async def login(
             },
         },
     )
-    # Refresh CSRF cookie after successful login
-    csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
-    csrf_protect.set_csrf_cookie(signed_token, response)
+    # Refresh CSRF cookie after successful login (only if CSRF is enabled)
+    if settings.csrf_enabled:
+        csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
+        csrf_protect.set_csrf_cookie(signed_token, response)
     return response
