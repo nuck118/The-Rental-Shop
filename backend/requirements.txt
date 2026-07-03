@@ -13,8 +13,8 @@ sqladmin>=0.20.0
 wtforms>=3.1.1
 
 # Validation / Settings
-pydantic==2.10.3
-pydantic-settings==2.6.1
+pydantic==2.10.4
+pydantic-settings==2.7.1
 
 # Authentication
 pyjwt==2.8.0
@@ -31,4 +31,4 @@ itsdangerous==2.2.0
 fastapi-csrf-protect==1.0.7
 
 # Testing
-pytest==8.0.0
+pytest==8.0.0# cache bust
