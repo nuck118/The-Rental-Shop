@@ -1,6 +1,8 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 
+const API_URL = import.meta.env.VITE_API_URL || "https://the-rental-shop.onrender.com";
+
 const storedUser = localStorage.getItem("user");
 
 export const useAuthStore = defineStore("auth", () => {
@@ -15,7 +17,7 @@ export const useAuthStore = defineStore("auth", () => {
    */
   const fetchCsrfToken = async () => {
     try {
-      const response = await fetch("/api/auth/csrf-token", {
+      const response = await fetch(`${API_URL}/api/auth/csrf-token`, {
         method: "GET",
         credentials: "include",
       });
@@ -44,7 +46,7 @@ export const useAuthStore = defineStore("auth", () => {
         headers["X-CSRF-Token"] = currentCsrfToken;
       }
 
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers,
         credentials: "include",

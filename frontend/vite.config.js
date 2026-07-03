@@ -9,4 +9,7 @@ export default defineConfig({
       "/admin": "http://localhost:8000",
     },
   },
+  define: {
+    __API_URL__: JSON.stringify(process.env.VITE_API_URL || "https://the-rental-shop.onrender.com"),
+  },
 });

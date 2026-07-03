@@ -1,6 +1,8 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 
+const API_URL = import.meta.env.VITE_API_URL || "https://the-rental-shop.onrender.com";
+
 export const useDeviceStore = defineStore("device", () => {
   const availableDevices = ref([]);
   const rentedDevices = ref([]);
@@ -16,7 +18,7 @@ export const useDeviceStore = defineStore("device", () => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await fetch("/api/hardware?status=Available&skip=" + (page - 1) * limit + "&limit=" + limit, {
+      const response = await fetch(`${API_URL}/api/hardware?status=Available&skip=` + (page - 1) * limit + "&limit=" + limit,
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error("Failed to fetch devices");
@@ -34,7 +36,7 @@ export const useDeviceStore = defineStore("device", () => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await fetch("/api/hardware?status=In+Use&skip=" + (page - 1) * limit + "&limit=" + limit, {
+      const response = await fetch(`${API_URL}/api/hardware?status=In+Use&skip=` + (page - 1) * limit + "&limit=" + limit,
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error("Failed to fetch devices");
@@ -52,7 +54,7 @@ export const useDeviceStore = defineStore("device", () => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await fetch("/api/hardware", {
+      const response = await fetch(`${API_URL}/api/hardware`,
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error("Failed to fetch history");
@@ -68,7 +70,7 @@ export const useDeviceStore = defineStore("device", () => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await fetch("/api/hardware?skip=0&limit=" + limit, {
+      const response = await fetch(`${API_URL}/api/hardware?skip=0&limit=` + limit,
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error("Failed to fetch all devices");
@@ -86,7 +88,7 @@ export const useDeviceStore = defineStore("device", () => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await fetch(`/api/hardware/${hardwareId}/rent`, {
+      const response = await fetch(`${API_URL}/api/hardware/${hardwareId}/rent`,
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -113,7 +115,7 @@ export const useDeviceStore = defineStore("device", () => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await fetch(`/api/hardware/${hardwareId}/return`, {
+      const response = await fetch(`${API_URL}/api/hardware/${hardwareId}/return`,
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

@@ -1,6 +1,8 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
+const API_URL = import.meta.env.VITE_API_URL || "https://the-rental-shop.onrender.com";
+
 export const useChatStore = defineStore("chat", () => {
   const messages = ref([]);
   const conversationHistory = ref([]);
@@ -24,7 +26,7 @@ export const useChatStore = defineStore("chat", () => {
     try {
       addMessage("user", userMessage);
 
-      const response = await fetch("/api/ai/chat", {
+      const response = await fetch(`${API_URL}/api/ai/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
