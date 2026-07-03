@@ -119,7 +119,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         """Main middleware dispatch handler."""
 
-        # Allow CORS preflight requests to pass through immediately
+        # Allow CORS preflight requests to pass through immediately with no security checks
+        # Let CORSMiddleware handle these requests
         if request.method == "OPTIONS":
             return await call_next(request)
 
