@@ -14,7 +14,11 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-2.5-flash"
 
     # CORS
-    cors_origins: list[str] = ["http://localhost:5173"]
+    cors_origins: list[str] = [
+        "http://localhost:5173",
+        "https://therentalshop.vercel.app",
+        "https://the-rental-shop.onrender.com"
+    ]
 
     # Security - Generate a strong random key if not provided in .env
     secret_key: str | None = None
