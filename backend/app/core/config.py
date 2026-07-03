@@ -25,15 +25,19 @@ class Settings(BaseSettings):
 
     def __init__(self, **data):
         super().__init__(**data)
-        # If secret_key is not set, check if we're in development
-        if not self.secret_key or self.secret_key == "your-secret-key-change-in-production":
+        # If secret_key is not set, generate one at runtime
+        if not self.secret_key or self.secret_key in (
+            "",
+            "your-secret-key-change-in-production",
+            "dev-key-never-use-in-production-change-in-env",
+        ):
             if os.environ.get("ENVIRONMENT") == "production":
                 raise ValueError(
                     "SECRET_KEY must be set in .env for production environment. "
                     "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(32))\""
                 )
-            # Use a stable development key
-            self.secret_key = "dev-key-never-use-in-production-change-in-env"
+            # Generate a random key for each session in development
+            self.secret_key = secrets.token_urlsafe(32)
 
 
 settings = Settings()

@@ -154,7 +154,7 @@ const handleRent = async (deviceOrId) => {
   const deviceId = typeof deviceOrId === "object" ? deviceOrId.id : deviceOrId;
   const deviceName = typeof deviceOrId === "object" ? deviceOrId.name : `Device #${deviceId}`;
   try {
-    await deviceStore.rentDevice(authStore.token, deviceId);
+    await deviceStore.rentDevice(authStore.token, deviceId, authStore.csrfToken);
     await refreshDevices();
     showToast("success", `✓ ${deviceName} has been rented. Find it in My Rentals.`);
     if (!showChatPanel.value) switchTab("rented");
@@ -167,7 +167,7 @@ const handleReturn = async (deviceOrId) => {
   const deviceId = typeof deviceOrId === "object" ? deviceOrId.id : deviceOrId;
   const deviceName = typeof deviceOrId === "object" ? deviceOrId.name : `Device #${deviceId}`;
   try {
-    await deviceStore.returnDevice(authStore.token, deviceId);
+    await deviceStore.returnDevice(authStore.token, deviceId, authStore.csrfToken);
     await refreshDevices();
     showToast("success", `✓ ${deviceName} has been returned successfully.`);
   } catch (err) {

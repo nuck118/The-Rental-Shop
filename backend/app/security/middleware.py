@@ -6,9 +6,13 @@ from collections import defaultdict
 from typing import Optional
 from datetime import datetime, timedelta
 
-from fastapi import Request, HTTPException, status
+from fastapi import Request, HTTPException, status, Depends
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
+from fastapi_csrf_protect import CsrfProtect
+from fastapi_csrf_protect.exceptions import CsrfProtectError
+
+from app.core.csrf import get_csrf_config  # noqa: F401 - loads CSRF config
 
 
 class RateLimitStore:
@@ -176,22 +180,14 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         # 3. CSRF Verification (if enabled and method is mutable)
         # Skip CSRF for admin panel - it uses its own session management
         if self.csrf_enabled and request.method in self.protected_methods and not request.url.path.startswith("/admin"):
-            session_id = self._get_session_id(request)
-
-            if session_id:
-                csrf_token = request.headers.get(self.csrf_header_name)
-
-                if not csrf_token:
-                    return JSONResponse(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        content={"detail": "Missing CSRF token"},
-                    )
-
-                if not self.csrf_validator.verify_token(session_id, csrf_token):
-                    return JSONResponse(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        content={"detail": "Invalid CSRF token"},
-                    )
+            csrf_protect = CsrfProtect()
+            try:
+                await csrf_protect.validate_csrf(request)
+            except CsrfProtectError as exc:
+                return JSONResponse(
+                    status_code=exc.status_code,
+                    content={"detail": exc.message},
+                )
 
         # 4. Add security headers to request state
         request.state.client_id = client_id

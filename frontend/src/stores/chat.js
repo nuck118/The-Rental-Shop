@@ -17,7 +17,7 @@ export const useChatStore = defineStore("chat", () => {
     });
   };
 
-  const sendMessage = async (userMessage, token) => {
+  const sendMessage = async (userMessage, token, csrfToken) => {
     loading.value = true;
     error.value = null;
 
@@ -29,7 +29,9 @@ export const useChatStore = defineStore("chat", () => {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          "X-CSRF-Token": csrfToken,
         },
+        credentials: "include",
         body: JSON.stringify({
           message: userMessage,
           conversation_history: conversationHistory.value,

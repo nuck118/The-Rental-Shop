@@ -1,8 +1,11 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import jwt
 from datetime import datetime, timedelta
+
+from fastapi_csrf_protect import CsrfProtect
 
 from app.core.database import get_db
 from app.core.config import settings
@@ -22,6 +25,31 @@ class LoginResponse(BaseModel):
     user: dict
 
 
+@router.get(
+    "/csrf-token",
+    status_code=status.HTTP_200_OK,
+    summary="Get CSRF token",
+    description="Generate and return a CSRF token cookie for state-changing requests.",
+)
+def get_csrf_token(
+    request: Request,
+    csrf_protect: CsrfProtect = Depends(),
+):
+    """
+    Generate a CSRF token and set it as a signed HttpOnly cookie.
+
+    The client must read the plain token from the response body and send it back
+    in the `X-CSRF-Token` header on subsequent POST/PUT/PATCH/DELETE requests.
+    """
+    csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
+    response = JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"csrf_token": csrf_token},
+    )
+    csrf_protect.set_csrf_cookie(signed_token, response)
+    return response
+
+
 @router.post(
     "/login",
     response_model=LoginResponse,
@@ -29,9 +57,11 @@ class LoginResponse(BaseModel):
     summary="User login",
     description="Authenticate user and return JWT token",
 )
-def login(
-    request: LoginRequest,
+async def login(
+    request: Request,
+    login_request: LoginRequest,
     db: Session = Depends(get_db),
+    csrf_protect: CsrfProtect = Depends(),
 ):
     """
     Authenticate user with username and password.
@@ -67,9 +97,11 @@ def login(
     }
     ```
     """
-    user = db.query(User).filter(User.username == request.username).first()
+    await csrf_protect.validate_csrf(request)
 
-    if not user or not verify_password(request.password, user.password_hash):
+    user = db.query(User).filter(User.username == login_request.username).first()
+
+    if not user or not verify_password(login_request.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
@@ -89,12 +121,19 @@ def login(
     }
     token = jwt.encode(payload, settings.secret_key, algorithm="HS256")
 
-    return LoginResponse(
-        token=token,
-        user={
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "is_admin": user.is_admin,
+    response = JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "token": token,
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "is_admin": user.is_admin,
+            },
         },
     )
+    # Refresh CSRF cookie after successful login
+    csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
+    csrf_protect.set_csrf_cookie(signed_token, response)
+    return response

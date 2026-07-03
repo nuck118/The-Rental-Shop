@@ -82,13 +82,17 @@ export const useDeviceStore = defineStore("device", () => {
     }
   };
 
-  const rentDevice = async (token, hardwareId) => {
+  const rentDevice = async (token, hardwareId, csrfToken) => {
     loading.value = true;
     error.value = null;
     try {
       const response = await fetch(`/api/hardware/${hardwareId}/rent`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "X-CSRF-Token": csrfToken,
+        },
+        credentials: "include",
       });
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
@@ -105,13 +109,17 @@ export const useDeviceStore = defineStore("device", () => {
     }
   };
 
-  const returnDevice = async (token, hardwareId) => {
+  const returnDevice = async (token, hardwareId, csrfToken) => {
     loading.value = true;
     error.value = null;
     try {
       const response = await fetch(`/api/hardware/${hardwareId}/return`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "X-CSRF-Token": csrfToken,
+        },
+        credentials: "include",
       });
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));

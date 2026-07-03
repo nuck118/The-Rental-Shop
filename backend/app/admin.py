@@ -24,7 +24,7 @@ from app.admin_helpers import (
 from app.core.database import engine, SessionLocal
 from sqlalchemy import func
 from app.models.audit_log import AuditLog
-from app.models.hardware import HardwareAsset
+from app.models.hardware import HardwareAsset, DataQuarantine
 from app.models.user import User
 
 TEMPLATES_DIR = str(Path(__file__).parent / "templates")
@@ -53,6 +53,7 @@ class UserAdmin(ModelView, model=User):
     name = "User"
     name_plural = "Users"
     icon = "fa-solid fa-user"
+    _bulk_actions = True
 
     column_list = [
         User.id,
@@ -101,6 +102,10 @@ class UserAdmin(ModelView, model=User):
         User.is_active,
         User.is_admin,
     ]
+    can_edit = True
+    can_delete = True
+    can_view_details = True
+    column_actions = []
     form_args = {
         "username": {
             "label": "Username",
@@ -198,6 +203,7 @@ class HardwareAssetAdmin(ModelView, model=HardwareAsset):
     name = "Hardware Asset"
     name_plural = "Hardware Assets"
     icon = "fa-solid fa-laptop"
+    _bulk_actions = True
 
     column_list = [
         HardwareAsset.id,
@@ -428,6 +434,74 @@ class AuditLogAdmin(ModelView, model=AuditLog):
     details_template = "sqladmin/audit_details.html"
 
 
+class DataQuarantineAdmin(ModelView, model=DataQuarantine):
+    """Admin view for quarantined data that failed validation."""
+
+    name = "Data Quarantine"
+    name_plural = "Data Quarantine"
+    icon = "fa-solid fa-triangle-exclamation"
+    _bulk_actions = True
+
+    column_list = [
+        DataQuarantine.id,
+        DataQuarantine.severity,
+        DataQuarantine.source,
+        DataQuarantine.resolved,
+        DataQuarantine.created_at,
+    ]
+    column_details_list = [
+        DataQuarantine.id,
+        DataQuarantine.raw_data,
+        DataQuarantine.errors,
+        DataQuarantine.severity,
+        DataQuarantine.source,
+        DataQuarantine.resolved,
+        DataQuarantine.created_at,
+    ]
+    column_searchable_list = [
+        DataQuarantine.source,
+        DataQuarantine.errors,
+    ]
+    column_sortable_list = [
+        DataQuarantine.id,
+        DataQuarantine.severity,
+        DataQuarantine.source,
+        DataQuarantine.resolved,
+        DataQuarantine.created_at,
+    ]
+    column_default_sort = [(DataQuarantine.created_at, True)]
+    column_labels = {
+        DataQuarantine.raw_data: "Raw Data",
+        DataQuarantine.errors: "Validation Errors",
+        DataQuarantine.severity: "Severity",
+        DataQuarantine.source: "Source",
+        DataQuarantine.resolved: "Resolved",
+        DataQuarantine.created_at: "Created At",
+    }
+    column_formatters = {
+        DataQuarantine.severity: lambda model, _: Markup(
+            f"<span class='border border-{'danger' if model.severity == 'critical' else 'warning'} text-{'danger' if model.severity == 'critical' else 'warning'} rounded-0 px-2 py-1 text-uppercase'"
+            f" style='font-size:0.7rem;font-weight:700;letter-spacing:0.05em;'>{model.severity.upper()}</span>"
+        ),
+        DataQuarantine.resolved: lambda model, _: boolean_badge(model.resolved, "Resolved", "Pending"),
+    }
+    column_filters = [
+        AllUniqueStringValuesFilter(DataQuarantine.severity, title="Severity"),
+        AllUniqueStringValuesFilter(DataQuarantine.source, title="Source"),
+        BooleanFilter(DataQuarantine.resolved, title="Resolved"),
+    ]
+
+    can_create = False
+    can_edit = True
+    can_delete = True
+    can_export = True
+    can_view_details = True
+    column_actions = []
+
+    page_size = 25
+    page_size_options = [10, 25, 50, 100]
+
+
 def _resolve_username(user_id: int) -> str:
     """Resolve a user ID to a username for display in audit logs."""
     db = SessionLocal()
@@ -472,5 +546,7 @@ def setup_admin(app):
     admin.add_view(UserAdmin)
     admin.add_view(HardwareAssetAdmin)
     admin.add_view(AuditLogAdmin)
+
+    admin.add_view(DataQuarantineAdmin)
 
     return admin

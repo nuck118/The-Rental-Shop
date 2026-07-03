@@ -61,16 +61,10 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    configuration = config.get_section(config.config_ini_section)
-    configuration["sqlalchemy.url"] = os.getenv(
-        "DATABASE_URL", "sqlite:///./rental_shop.db"
-    )
-
-    connectable = engine_from_config(
-        configuration,
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    # Import the engine from our database module to use the same connection logic
+    from app.core.database import engine
+    
+    connectable = engine
 
     with connectable.connect() as connection:
         context.configure(
