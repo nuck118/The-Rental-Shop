@@ -1,6 +1,5 @@
 from datetime import date, datetime
 from sqlalchemy import Column, Integer, String, Text, Date, Boolean, DateTime
-from sqlalchemy.orm import declarative_base
 
 from app.core.database import Base
 
@@ -17,7 +16,7 @@ class HardwareAsset(Base):
     status = Column(String(50), nullable=False, default="Available", index=True)
     assigned_to = Column(String(255), nullable=True)
     notes = Column(Text, nullable=True)
-    repair_flagged = Column(Boolean, default=False, nullable=False)
+    repair_flagged = Column(Boolean, default=False, nullable=True)
 
     def __repr__(self):
         return f"<HardwareAsset(id={self.id}, name={self.name}, brand={self.brand}, status={self.status})>"
