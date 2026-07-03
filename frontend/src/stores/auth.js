@@ -1,7 +1,22 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://the-rental-shop.onrender.com";
+// API configuration with timeout for Render cold starts
+const API_TIMEOUT = 120000; // 2 minutes for Render cold starts
+
+const getApiUrl = (path) => {
+  const base = import.meta.env.VITE_API_URL?.replace(/\/+$/, '') || "https://the-rental-shop.onrender.com";
+  return `${base}/${path.replace(/^\/+/, '')}`;
+};
+
+const fetchWithTimeout = (url, options = {}) => {
+  return Promise.race([
+    fetch(url, { ...options, signal: AbortSignal.timeout(API_TIMEOUT) }),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Request timeout - server may be waking up, please try again")), API_TIMEOUT)
+    ),
+  ]);
+};
 
 const storedUser = localStorage.getItem("user");
 
@@ -17,7 +32,7 @@ export const useAuthStore = defineStore("auth", () => {
    */
   const fetchCsrfToken = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/auth/csrf-token`, {
+      const response = await fetchWithTimeout(getApiUrl("api/auth/csrf-token"), {
         method: "GET",
         credentials: "include",
       });
@@ -46,7 +61,7 @@ export const useAuthStore = defineStore("auth", () => {
         headers["X-CSRF-Token"] = currentCsrfToken;
       }
 
-      const response = await fetch(`${API_URL}/api/auth/login`, {
+      const response = await fetchWithTimeout(getApiUrl("api/auth/login"), {
         method: "POST",
         headers,
         credentials: "include",

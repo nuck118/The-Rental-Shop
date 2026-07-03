@@ -25,11 +25,11 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     app = FastAPI(title="The Rental Shop API", lifespan=lifespan)
 
-    # CORS Middleware - allow all origins for demo
+    # CORS Middleware - use configured origins for proper credentials support
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=False,  # Must be false when using wildcard
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
         allow_headers=["*"],
         expose_headers=["X-Total-Count", "X-Page-Count"],
