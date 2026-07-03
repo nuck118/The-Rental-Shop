@@ -17,8 +17,8 @@ from app.models.user import User
 ADMIN_SESSION_KWARGS = {
     "session_cookie": "session",
     "max_age": 1209600,  # 14 days
-    "same_site": "lax",
-    "https_only": False,
+    "same_site": "none",  # Changed to none for cross-domain requests
+    "https_only": True,   # Required for same_site=none
 }
 
 
