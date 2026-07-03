@@ -6,6 +6,7 @@ from datetime import date
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user, get_current_active_admin
+from app.core.validation import import_hardware_batch
 from app.models.hardware import HardwareAsset
 
 router = APIRouter(prefix="/api/hardware", tags=["Hardware Management"])
@@ -205,25 +206,36 @@ def create_hardware(
     }
     ```
     """
-    from datetime import datetime
+    # Validate and sanitize input using Pydantic schema
+    raw_data = {
+        "name": name,
+        "brand": brand,
+        "status": status,
+        "purchase_date": purchase_date,
+        "assigned_to": assigned_to,
+        "notes": notes,
+    }
+    
+    from app.core.validation import validate_hardware_record, quarantine_record
+    result = validate_hardware_record(raw_data)
+    
+    if not result.is_valid:
+        # Quarantine the bad record
+        severity = "critical" if result.is_critical else "warning"
+        quarantine_record(db, raw_data, result.errors, severity, "api_create")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Validation failed: {', '.join(result.errors)}",
+        )
 
-    parsed_date = None
-    if purchase_date:
-        try:
-            parsed_date = datetime.strptime(purchase_date, "%Y-%m-%d").date()
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid date format. Use YYYY-MM-DD",
-            )
-
+    # Valid record — create HardwareAsset
     device = HardwareAsset(
-        name=name,
-        brand=brand,
-        status=status,
-        purchase_date=parsed_date,
-        assigned_to=assigned_to,
-        notes=notes,
+        name=result.schema.name,
+        brand=result.schema.brand,
+        purchase_date=date.fromisoformat(result.schema.purchase_date) if result.schema.purchase_date else None,
+        status=result.schema.status,
+        assigned_to=result.schema.assigned_to,
+        notes=result.schema.notes,
     )
 
     db.add(device)
@@ -302,6 +314,7 @@ def update_hardware(
     ```
     """
     from datetime import datetime
+    from app.core.validation import validate_hardware_record, quarantine_record
 
     device = db.query(HardwareAsset).filter(HardwareAsset.id == hardware_id).first()
 
@@ -311,24 +324,45 @@ def update_hardware(
             detail=f"Hardware asset with ID {hardware_id} not found",
         )
 
+    # Build raw_data dict with only provided fields for validation
+    raw_data = {}
     if name is not None:
-        device.name = name
+        raw_data["name"] = name
     if brand is not None:
-        device.brand = brand
+        raw_data["brand"] = brand
     if status is not None:
-        device.status = status
+        raw_data["status"] = status
     if purchase_date is not None:
-        try:
-            device.purchase_date = datetime.strptime(purchase_date, "%Y-%m-%d").date()
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid date format. Use YYYY-MM-DD",
-            )
+        raw_data["purchase_date"] = purchase_date
     if assigned_to is not None:
-        device.assigned_to = assigned_to
+        raw_data["assigned_to"] = assigned_to
     if notes is not None:
-        device.notes = notes
+        raw_data["notes"] = notes
+
+    # Validate the update payload
+    result = validate_hardware_record(raw_data)
+    
+    if not result.is_valid:
+        severity = "critical" if result.is_critical else "warning"
+        quarantine_record(db, raw_data, result.errors, severity, "api_update")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Validation failed: {', '.join(result.errors)}",
+        )
+
+    # Apply validated data
+    if result.schema.name is not None:
+        device.name = result.schema.name
+    if result.schema.brand is not None:
+        device.brand = result.schema.brand
+    if result.schema.status is not None:
+        device.status = result.schema.status
+    if result.schema.purchase_date is not None:
+        device.purchase_date = date.fromisoformat(result.schema.purchase_date)
+    if result.schema.assigned_to is not None:
+        device.assigned_to = result.schema.assigned_to
+    if result.schema.notes is not None:
+        device.notes = result.schema.notes
 
     db.commit()
     db.refresh(device)

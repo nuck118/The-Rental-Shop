@@ -1,5 +1,5 @@
-from datetime import date
-from sqlalchemy import Column, Integer, String, Text, Date, Boolean
+from datetime import date, datetime
+from sqlalchemy import Column, Integer, String, Text, Date, Boolean, DateTime
 from sqlalchemy.orm import declarative_base
 
 from app.core.database import Base
@@ -21,3 +21,20 @@ class HardwareAsset(Base):
 
     def __repr__(self):
         return f"<HardwareAsset(id={self.id}, name={self.name}, brand={self.brand}, status={self.status})>"
+
+
+class DataQuarantine(Base):
+    """Quarantine table for invalid or incomplete hardware data that failed validation."""
+
+    __tablename__ = "data_quarantine"
+
+    id = Column(Integer, primary_key=True, index=True)
+    raw_data = Column(Text, nullable=False)  # Original raw input as JSON
+    errors = Column(Text, nullable=False)  # Validation errors as JSON
+    severity = Column(String(20), nullable=False, default="warning")  # "critical" or "warning"
+    source = Column(String(100), nullable=True)  # e.g., "seed_script", "api_import"
+    resolved = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    def __repr__(self):
+        return f"<DataQuarantine(id={self.id}, severity={self.severity}, resolved={self.resolved})>"

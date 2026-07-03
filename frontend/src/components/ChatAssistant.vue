@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, nextTick, onMounted } from "vue";
 import { Send, Loader } from "lucide-vue-next";
+import { useAuthStore } from "../stores/auth";
 
 const props = defineProps({
   token: {
@@ -8,6 +9,8 @@ const props = defineProps({
     required: true,
   },
 });
+
+const authStore = useAuthStore();
 
 const messages = ref([]);
 const userInput = ref("");
@@ -56,7 +59,9 @@ const sendMessage = async () => {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${props.token}`,
+        "X-CSRF-Token": authStore.csrfToken,
       },
+      credentials: "include",
       body: JSON.stringify({
         message: userMessage,
         conversation_history: conversationHistory.value,

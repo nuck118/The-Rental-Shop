@@ -3,25 +3,31 @@ fastapi==0.115.5
 uvicorn[standard]==0.32.1
 
 # ORM / Database
-sqlalchemy>=2.0.36
-alembic>=1.13.1
+sqlalchemy==2.0.36
+alembic==1.13.1
+sqlitecloud==0.0.84
 
 # Admin Panel
-sqladmin>=0.1.6
-wtforms<3.2
+sqladmin==0.1.6
+wtforms==3.1.1
 
 # Validation / Settings
 pydantic==2.10.3
 pydantic-settings==2.6.1
 
 # Authentication
-pyjwt>=2.8.0
+pyjwt==2.8.0
 
 # Async HTTP (for AI client transport)
 httpx==0.28.1
 
 # AI
 google-genai==1.16.0
+google-api-core==2.31.0
+itsdangerous==2.2.0
+
+# CSRF Protection
+fastapi-csrf-protect==1.0.7
 
 # Testing
-pytest>=8.0.0
+pytest==8.0.0

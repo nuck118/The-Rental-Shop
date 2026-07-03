@@ -43,13 +43,11 @@
     <div class="d-flex align-items-center gap-3">
       <!-- Bulk Actions -->
       <div class="dropdown">
-        <button {% if not model_view.can_delete and not model_view._custom_actions_in_list %}disabled{% endif %}
-          class="btn btn-outline-dark text-uppercase rounded-0 px-3 py-1" type="button"
+        <button class="btn btn-dark text-white text-uppercase rounded-0 px-3 py-1" type="button"
           id="bulkActionsBtn" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
           style="font-family: 'Inter', sans-serif; font-size: 0.7rem; letter-spacing: 0.08em; font-weight: 700;">
-          Actions <i class="fa-solid fa-chevron-down ms-2"></i>
+          <i class="fa-solid fa-gear me-2"></i> Actions <i class="fa-solid fa-chevron-down ms-2"></i>
         </button>
-        {% if model_view.can_delete or model_view._custom_actions_in_list %}
         <div class="dropdown-menu rounded-0 border-dark" aria-labelledby="bulkActionsBtn">
           {% if model_view.can_delete %}
           <a class="dropdown-item text-danger text-uppercase" id="action-delete" href="#"
@@ -60,6 +58,7 @@
             <i class="fa-solid fa-trash me-2"></i> Delete Selected
           </a>
           {% endif %}
+          {% if model_view._custom_actions_in_list %}
           {% for custom_action, label in model_view._custom_actions_in_list.items() %}
             {% if custom_action in model_view._custom_actions_confirmation %}
             <a class="dropdown-item text-uppercase" id="action-customconfirm-{{ custom_action }}" href="#"
@@ -71,8 +70,8 @@
                style="font-size: 0.75rem; letter-spacing: 0.05em; font-weight: 600;">{{ label }}</a>
             {% endif %}
           {% endfor %}
+          {% endif %}
         </div>
-        {% endif %}
       </div>
 
       <!-- Search -->
@@ -100,7 +99,7 @@
   </div>
 
   <!-- ─── Table ──────────────────────────────────────────── -->
-  <div class="table-responsive border-top border-dark border-2 bg-white">
+  <div class="table-responsive border-top border-dark border-2 bg-white" style="overflow: visible !important;">
     <table class="table table-hover table-borderless align-middle mb-0">
       <thead>
         <tr class="border-bottom border-dark border-1">
@@ -139,12 +138,13 @@
             <input type="hidden" value="{{ get_object_identifier(row) }}">
             <input class="form-check-input rounded-0 border-dark shadow-none select-box" type="checkbox" value="{{ get_object_identifier(row) }}" style="cursor:pointer;" aria-label="Select item">
           </td>
-          <td class="py-3">
+          <td class="py-3" style="position: relative;">
+            {% if model_view.can_view_details or model_view.can_edit or model_view.can_delete %}
             <div class="dropdown">
               <button class="btn btn-sm btn-link text-dark text-decoration-none p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="fa-solid fa-ellipsis-vertical px-2 py-1"></i>
               </button>
-              <ul class="dropdown-menu border-dark rounded-0 shadow-sm" style="font-size:0.85rem;">
+              <ul class="dropdown-menu border-dark rounded-0 shadow-sm" style="font-size:0.85rem; z-index: 1050; position: absolute;">
                 {% if model_view.can_view_details %}
                 <li>
                   <a class="dropdown-item text-uppercase" href="{{ model_view._build_url_for('admin:details', request, row) }}" style="font-size:0.75rem; font-weight:600; letter-spacing:0.05em;">
@@ -174,6 +174,7 @@
                 {% endif %}
               </ul>
             </div>
+            {% endif %}
           </td>
           {% for name in model_view._list_prop_names %}
           {% set value, formatted_value = model_view.get_list_value(row, name) %}
