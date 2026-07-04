@@ -200,32 +200,30 @@ const handlePageChange = (page) => {
     </transition>
 
     <!-- Header -->
-    <header class="bg-white border-b border-neutral-200">
-      <!-- Thin top accent -->
-      <div class="h-1 bg-neutral-900"></div>
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-neutral-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <!-- Brand -->
           <div class="flex items-center gap-3">
-            <div class="w-9 h-9 bg-neutral-900 flex items-center justify-center">
-              <span class="text-white text-sm font-bold">TRS</span>
+            <div class="w-8 h-8 sm:w-9 sm:h-9 bg-neutral-900 rounded-lg flex items-center justify-center">
+              <span class="text-white text-xs sm:text-sm font-bold">TRS</span>
             </div>
             <div>
-              <h1 class="text-base font-bold text-neutral-900 tracking-tight">The Rental Shop</h1>
-              <p class="text-xs text-neutral-500 mt-0.5">Hardware Rental Management</p>
+              <h1 class="text-sm sm:text-base font-bold text-neutral-900 tracking-tight">The Rental Shop</h1>
+              <p class="text-[10px] sm:text-xs text-neutral-500 mt-0.5">Hardware Rental Management</p>
             </div>
           </div>
 
           <!-- Mobile Tabs -->
           <div class="sm:hidden">
-            <div class="flex border border-neutral-200 divide-x divide-neutral-200">
+            <div class="flex bg-neutral-100 rounded-lg p-0.5">
               <button
                 v-for="tab in tabs"
                 :key="tab.id"
                 @click="switchTab(tab.id)"
                 :class="[
-                  'flex-1 px-3 py-2.5 text-xs font-medium transition-colors flex items-center justify-center gap-1.5',
-                  activeTab === tab.id ? 'bg-neutral-900 text-white' : 'bg-white text-neutral-500 hover:text-neutral-900',
+                  'flex-1 px-2 py-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1',
+                  activeTab === tab.id ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-600 hover:text-neutral-900',
                 ]"
               >
                 <component :is="tab.icon" class="w-3.5 h-3.5" />
@@ -235,16 +233,16 @@ const handlePageChange = (page) => {
           </div>
 
           <!-- Desktop tabs -->
-          <div class="hidden sm:flex items-center gap-6">
+          <div class="hidden sm:flex items-center gap-1">
             <button
               v-for="tab in tabs"
               :key="tab.id"
               @click="switchTab(tab.id)"
               :class="[
-                'px-1 py-2 text-sm font-medium transition-colors border-b-2 -mb-4',
+                'px-4 py-2 text-sm font-medium rounded-lg transition-all',
                 activeTab === tab.id
-                  ? 'border-neutral-900 text-neutral-900'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-900',
+                  ? 'bg-neutral-900 text-white'
+                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100',
               ]"
             >
               <component :is="tab.icon" class="w-4 h-4 inline-block mr-1.5" />
@@ -253,13 +251,13 @@ const handlePageChange = (page) => {
           </div>
 
           <!-- Profile -->
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2">
             <div class="relative">
               <button
                 @click="showProfileMenu = !showProfileMenu"
-                class="flex items-center gap-2 px-3 py-2 hover:bg-neutral-100 transition-colors"
+                class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-neutral-100 transition-colors"
               >
-                <div class="w-8 h-8 bg-neutral-900 flex items-center justify-center text-white text-sm font-bold">
+                <div class="w-8 h-8 bg-neutral-900 rounded-lg flex items-center justify-center text-white text-sm font-bold">
                   {{ authStore.user?.username?.[0]?.toUpperCase() || "U" }}
                 </div>
                 <span class="text-sm text-neutral-700 hidden sm:inline">{{ authStore.user?.username || "User" }}</span>
@@ -268,11 +266,11 @@ const handlePageChange = (page) => {
               <transition name="dropdown">
                 <div
                   v-if="showProfileMenu"
-                  class="absolute right-0 mt-1 w-48 bg-white border border-neutral-200 shadow-dropdown z-10"
+                  class="absolute right-0 mt-2 w-48 bg-white rounded-lg border border-neutral-200 shadow-lg z-10"
                 >
                   <button
                     @click="handleLogout"
-                    class="w-full text-left px-4 py-2.5 text-sm text-primary-600 hover:bg-neutral-100 transition-colors flex items-center gap-2"
+                    class="w-full text-left px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors flex items-center gap-2 rounded-t-lg"
                   >
                     <LogOut class="w-4 h-4" />
                     Sign Out
@@ -287,9 +285,9 @@ const handlePageChange = (page) => {
 
     <!-- Filter Bar -->
     <div class="bg-white border-b border-neutral-200">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
         <!-- Desktop -->
-        <div class="hidden sm:flex flex-wrap gap-3 items-center">
+        <div class="hidden sm:flex flex-wrap gap-2 sm:gap-3 items-center">
           <!-- Search -->
           <div class="relative flex-1 min-w-[200px]">
             <Search class="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
@@ -305,10 +303,10 @@ const handlePageChange = (page) => {
           <div class="relative">
             <button
               @click="showStatusDropdown = !showStatusDropdown"
-              class="flex items-center gap-3 px-4 py-2 border border-neutral-200 text-sm bg-white min-w-[150px] justify-between hover:border-neutral-300 transition-colors"
+              class="flex items-center gap-2 px-3 sm:px-4 py-2 border border-neutral-200 text-sm bg-white min-w-[120px] sm:min-w-[150px] justify-between hover:border-neutral-300 transition-colors rounded-lg"
             >
-              <span class="text-neutral-700">{{ selectedStatus === 'all' ? 'All Status' : selectedStatus }}</span>
-              <ChevronRight class="w-3.5 h-3.5 text-neutral-400 -rotate-90" />
+              <span class="text-neutral-700 truncate">{{ selectedStatus === 'all' ? 'All Status' : selectedStatus }}</span>
+              <ChevronRight class="w-3.5 h-3.5 text-neutral-400 -rotate-90 flex-shrink-0" />
             </button>
             <transition name="dropdown">
               <div v-if="showStatusDropdown" class="dropdown-editorial">
@@ -328,10 +326,10 @@ const handlePageChange = (page) => {
           <div class="relative">
             <button
               @click="showBrandDropdown = !showBrandDropdown"
-              class="flex items-center gap-3 px-4 py-2 border border-neutral-200 text-sm bg-white min-w-[150px] justify-between hover:border-neutral-300 transition-colors"
+              class="flex items-center gap-2 px-3 sm:px-4 py-2 border border-neutral-200 text-sm bg-white min-w-[120px] sm:min-w-[150px] justify-between hover:border-neutral-300 transition-colors rounded-lg"
             >
-              <span class="text-neutral-700">{{ selectedBrand === 'all' ? 'All Brands' : selectedBrand }}</span>
-              <ChevronRight class="w-3.5 h-3.5 text-neutral-400 -rotate-90" />
+              <span class="text-neutral-700 truncate">{{ selectedBrand === 'all' ? 'All Brands' : selectedBrand }}</span>
+              <ChevronRight class="w-3.5 h-3.5 text-neutral-400 -rotate-90 flex-shrink-0" />
             </button>
             <transition name="dropdown">
               <div v-if="showBrandDropdown" class="dropdown-editorial">
@@ -351,13 +349,13 @@ const handlePageChange = (page) => {
           <div class="relative">
             <button
               @click="showSortDropdown = !showSortDropdown"
-              class="flex items-center gap-3 px-4 py-2 border border-neutral-200 text-sm bg-white min-w-[160px] justify-between hover:border-neutral-300 transition-colors"
+              class="flex items-center gap-2 px-3 sm:px-4 py-2 border border-neutral-200 text-sm bg-white min-w-[120px] sm:min-w-[160px] justify-between hover:border-neutral-300 transition-colors rounded-lg"
             >
-              <span class="text-neutral-700 flex items-center gap-2">
-                <ArrowUpDown class="w-3.5 h-3.5 text-neutral-400" />
-                Sort
+              <span class="text-neutral-700 flex items-center gap-2 truncate">
+                <ArrowUpDown class="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                <span class="hidden sm:inline">Sort</span>
               </span>
-              <ChevronRight class="w-3.5 h-3.5 text-neutral-400 -rotate-90" />
+              <ChevronRight class="w-3.5 h-3.5 text-neutral-400 -rotate-90 flex-shrink-0" />
             </button>
             <transition name="dropdown">
               <div v-if="showSortDropdown" class="dropdown-editorial">
@@ -375,7 +373,7 @@ const handlePageChange = (page) => {
         </div>
 
         <!-- Mobile -->
-        <div class="sm:hidden space-y-3">
+        <div class="sm:hidden space-y-2">
           <div class="relative">
             <Search class="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
             <input
@@ -388,7 +386,7 @@ const handlePageChange = (page) => {
 
           <button
             @click="showMobileFilters = !showMobileFilters"
-            class="flex items-center justify-center gap-2 w-full px-4 py-2.5 border border-neutral-200 text-sm text-neutral-700 bg-white hover:border-neutral-300 transition-colors"
+            class="flex items-center justify-center gap-2 w-full px-4 py-2.5 border border-neutral-200 text-sm text-neutral-700 bg-white hover:border-neutral-300 transition-colors rounded-lg"
           >
             <Filter class="w-4 h-4" />
             {{ showMobileFilters ? 'Hide Filters' : 'Filters' }}
@@ -399,7 +397,7 @@ const handlePageChange = (page) => {
               <div class="relative">
                 <button
                   @click="showStatusDropdown = !showStatusDropdown"
-                  class="w-full flex items-center justify-between gap-2 px-3 py-2 border border-neutral-200 text-xs bg-white"
+                  class="w-full flex items-center justify-between gap-2 px-3 py-2 border border-neutral-200 text-xs bg-white rounded-lg"
                 >
                   <span class="truncate">{{ selectedStatus === 'all' ? 'Status' : selectedStatus }}</span>
                   <ChevronRight class="w-3 h-3 text-neutral-400 flex-shrink-0" />
@@ -420,7 +418,7 @@ const handlePageChange = (page) => {
               <div class="relative">
                 <button
                   @click="showBrandDropdown = !showBrandDropdown"
-                  class="w-full flex items-center justify-between gap-2 px-3 py-2 border border-neutral-200 text-xs bg-white"
+                  class="w-full flex items-center justify-between gap-2 px-3 py-2 border border-neutral-200 text-xs bg-white rounded-lg"
                 >
                   <span class="truncate">{{ selectedBrand === 'all' ? 'Brand' : selectedBrand }}</span>
                   <ChevronRight class="w-3 h-3 text-neutral-400 flex-shrink-0" />
