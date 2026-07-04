@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from sqlalchemy import Column, Integer, String, Text, Date, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Text, Date, Boolean, DateTime, ForeignKey
 
 from app.core.database import Base
 
@@ -37,3 +37,19 @@ class DataQuarantine(Base):
 
     def __repr__(self):
         return f"<DataQuarantine(id={self.id}, severity={self.severity}, resolved={self.resolved})>"
+
+
+class ReturnRecord(Base):
+    """Record of device returns with condition and description."""
+
+    __tablename__ = "return_record"
+
+    id = Column(Integer, primary_key=True, index=True)
+    hardware_id = Column(Integer, ForeignKey("hardware_asset.id"), nullable=False, index=True)
+    returned_by = Column(String(255), nullable=False, index=True)
+    return_condition = Column(String(50), nullable=False)  # "perfect", "damaged", "other"
+    description = Column(Text, nullable=True)  # Required when condition is "other"
+    returned_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    def __repr__(self):
+        return f"<ReturnRecord(id={self.id}, hardware_id={self.hardware_id}, condition={self.return_condition})>"

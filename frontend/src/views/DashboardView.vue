@@ -5,6 +5,7 @@ import { useAuthStore } from "../stores/auth";
 import { useDeviceStore } from "../stores/device";
 import DeviceCard from "../components/DeviceCard.vue";
 import ChatAssistant from "../components/ChatAssistant.vue";
+import ReturnModal from "../components/ReturnModal.vue";
 import { Package, Truck, LogOut, X, Bot, ChevronLeft, ChevronRight, Search, CheckCircle, AlertCircle, ArrowUpDown, Menu, Filter } from "lucide-vue-next";
 
 const router = useRouter();
@@ -21,6 +22,8 @@ const showSortDropdown = ref(false);
 const showMobileFilters = ref(false);
 const sortField = ref("name-asc");
 const sortDirection = ref("asc");
+const showReturnModal = ref(false);
+const deviceToReturn = ref(null);
 
 // Toast notification state
 const toast = ref(null); // { type: 'success'|'error', message: string }
@@ -163,12 +166,25 @@ const handleRent = async (deviceOrId) => {
   }
 };
 
-const handleReturn = async (deviceOrId) => {
-  const deviceId = typeof deviceOrId === "object" ? deviceOrId.id : deviceOrId;
-  const deviceName = typeof deviceOrId === "object" ? deviceOrId.name : `Device #${deviceId}`;
+const handleReturn = (deviceOrId) => {
+  const device = typeof deviceOrId === "object" ? deviceOrId : null;
+  if (device) {
+    deviceToReturn.value = device;
+    showReturnModal.value = true;
+  }
+};
+
+const handleReturnConfirm = async (returnData) => {
+  if (!deviceToReturn.value) return;
+  
+  const deviceId = deviceToReturn.value.id;
+  const deviceName = deviceToReturn.value.name;
+  
   try {
-    await deviceStore.returnDevice(authStore.token, deviceId, authStore.csrfToken);
+    await deviceStore.returnDevice(authStore.token, deviceId, authStore.csrfToken, returnData);
     await refreshDevices();
+    showReturnModal.value = false;
+    deviceToReturn.value = null;
     showToast("success", `${deviceName} has been returned.`);
   } catch (err) {
     showToast("error", err.message);
@@ -638,6 +654,14 @@ const handlePageChange = (page) => {
         </div>
       </div>
     </transition>
+
+    <!-- Return Modal -->
+    <ReturnModal
+      :show="showReturnModal"
+      :device="deviceToReturn"
+      @close="showReturnModal = false; deviceToReturn = null"
+      @confirm="handleReturnConfirm"
+    />
   </div>
 </template>
 

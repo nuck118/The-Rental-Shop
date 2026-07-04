@@ -24,7 +24,7 @@ from app.admin_helpers import (
 from app.core.database import engine, SessionLocal
 from sqlalchemy import func
 from app.models.audit_log import AuditLog
-from app.models.hardware import HardwareAsset, DataQuarantine
+from app.models.hardware import HardwareAsset, DataQuarantine, ReturnRecord
 from app.models.user import User
 
 TEMPLATES_DIR = str(Path(__file__).parent / "templates")
@@ -502,6 +502,79 @@ class DataQuarantineAdmin(ModelView, model=DataQuarantine):
     page_size_options = [10, 25, 50, 100]
 
 
+class ReturnRecordAdmin(ModelView, model=ReturnRecord):
+    """Admin view for device return records."""
+
+    name = "Return Record"
+    name_plural = "Return Records"
+    icon = "fa-solid fa-rotate-left"
+
+    column_list = [
+        ReturnRecord.id,
+        ReturnRecord.hardware_id,
+        ReturnRecord.returned_by,
+        ReturnRecord.return_condition,
+        ReturnRecord.returned_at,
+    ]
+    column_details_list = [
+        ReturnRecord.id,
+        ReturnRecord.hardware_id,
+        ReturnRecord.returned_by,
+        ReturnRecord.return_condition,
+        ReturnRecord.description,
+        ReturnRecord.returned_at,
+    ]
+    column_searchable_list = [
+        ReturnRecord.returned_by,
+    ]
+    column_sortable_list = [
+        ReturnRecord.id,
+        ReturnRecord.hardware_id,
+        ReturnRecord.returned_by,
+        ReturnRecord.return_condition,
+        ReturnRecord.returned_at,
+    ]
+    column_default_sort = [(ReturnRecord.returned_at, True)]
+    column_labels = {
+        ReturnRecord.hardware_id: "Device ID",
+        ReturnRecord.returned_by: "Returned By",
+        ReturnRecord.return_condition: "Condition",
+        ReturnRecord.description: "Description",
+        ReturnRecord.returned_at: "Returned At",
+    }
+    column_formatters = {
+        ReturnRecord.return_condition: lambda model, _: _condition_badge(model.return_condition),
+    }
+    column_filters = [
+        AllUniqueStringValuesFilter(ReturnRecord.return_condition, title="Condition"),
+        AllUniqueStringValuesFilter(ReturnRecord.returned_by, title="Returned By"),
+    ]
+
+    can_create = False
+    can_edit = False
+    can_delete = False
+    can_export = True
+    can_view_details = True
+    column_actions = []
+
+    page_size = 25
+    page_size_options = [10, 25, 50, 100]
+
+
+def _condition_badge(condition: str) -> str:
+    """Format return condition as a badge."""
+    colors = {
+        "perfect": "success",
+        "damaged": "danger",
+        "other": "warning",
+    }
+    color = colors.get(condition, "secondary")
+    return Markup(
+        f"<span class='border border-{color} text-{color} rounded-0 px-2 py-1 text-uppercase'"
+        f" style='font-size:0.7rem;font-weight:700;letter-spacing:0.05em;'>{condition.upper()}</span>"
+    )
+
+
 def _resolve_username(user_id: int) -> str:
     """Resolve a user ID to a username for display in audit logs."""
     db = SessionLocal()
@@ -546,7 +619,7 @@ def setup_admin(app):
     admin.add_view(UserAdmin)
     admin.add_view(HardwareAssetAdmin)
     admin.add_view(AuditLogAdmin)
-
+    admin.add_view(ReturnRecordAdmin)
     admin.add_view(DataQuarantineAdmin)
 
     return admin

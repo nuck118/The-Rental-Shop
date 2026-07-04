@@ -126,7 +126,7 @@ export const useDeviceStore = defineStore("device", () => {
     }
   };
 
-  const returnDevice = async (token, hardwareId, csrfToken) => {
+  const returnDevice = async (token, hardwareId, csrfToken, returnData = {}) => {
     loading.value = true;
     error.value = null;
     try {
@@ -135,8 +135,10 @@ export const useDeviceStore = defineStore("device", () => {
         headers: {
           Authorization: `Bearer ${token}`,
           "X-CSRF-Token": csrfToken,
+          "Content-Type": "application/json",
         },
         credentials: "include",
+        body: JSON.stringify(returnData),
       });
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));

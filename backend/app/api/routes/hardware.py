@@ -1,13 +1,13 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import date
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user, get_current_active_admin
 from app.core.validation import import_hardware_batch
-from app.models.hardware import HardwareAsset
+from app.models.hardware import HardwareAsset, ReturnRecord
 
 router = APIRouter(prefix="/api/hardware", tags=["Hardware Management"])
 
@@ -21,6 +21,15 @@ class HardwareAssetResponse(BaseModel):
     status: str
     assigned_to: Optional[str] = None
     notes: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ReturnRequest(BaseModel):
+    """Request schema for device return."""
+    return_condition: str = Field(..., description="Condition of device: perfect, damaged, or other")
+    description: Optional[str] = Field(None, description="Description required when condition is 'other'")
 
     class Config:
         from_attributes = True
@@ -439,14 +448,15 @@ def rent_hardware(
     response_model=HardwareAssetResponse,
     status_code=status.HTTP_200_OK,
     summary="Return a hardware asset",
-    description="Returns a hardware asset that is currently rented by the user.",
+    description="Returns a hardware asset that is currently rented by the user with condition information.",
 )
 def return_hardware(
     hardware_id: int,
+    return_request: ReturnRequest,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_active_user),
 ):
-    """Return a device."""
+    """Return a device with condition and description."""
     device = db.query(HardwareAsset).filter(HardwareAsset.id == hardware_id).first()
     if not device:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Hardware asset not found")
@@ -462,8 +472,42 @@ def return_hardware(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You cannot return a device you did not rent."
         )
-        
-    device.status = "Available"
+    
+    # Validate return condition
+    valid_conditions = ["perfect", "damaged", "other"]
+    if return_request.return_condition not in valid_conditions:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid condition. Must be one of: {', '.join(valid_conditions)}"
+        )
+    
+    # Require description when condition is "other"
+    if return_request.return_condition == "other" and not return_request.description:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Description is required when condition is 'other'"
+        )
+    
+    # Create return record
+    return_record = ReturnRecord(
+        hardware_id=hardware_id,
+        returned_by=current_user.username,
+        return_condition=return_request.return_condition,
+        description=return_request.description,
+    )
+    db.add(return_record)
+    
+    # Update device status based on condition
+    if return_request.return_condition == "perfect":
+        device.status = "Available"
+        device.repair_flagged = False
+    else:
+        # damaged or other -> goes to repair
+        device.status = "Repair"
+        device.repair_flagged = True
+        if return_request.description:
+            device.notes = return_request.description
+    
     device.assigned_to = None
     db.commit()
     db.refresh(device)

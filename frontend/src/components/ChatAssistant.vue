@@ -3,6 +3,22 @@ import { ref, computed, nextTick, onMounted } from "vue";
 import { Send, Loader } from "lucide-vue-next";
 import { useAuthStore } from "../stores/auth";
 
+const API_TIMEOUT = 120000;
+
+const getApiUrl = (path) => {
+  const base = import.meta.env.VITE_API_URL?.replace(/\/+$/, '') || "https://the-rental-shop.onrender.com";
+  return `${base}/${path.replace(/^\/+/, '')}`;
+};
+
+const fetchWithTimeout = (url, options = {}) => {
+  return Promise.race([
+    fetch(url, { ...options, signal: AbortSignal.timeout(API_TIMEOUT) }),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Request timeout - server may be waking up, please try again")), API_TIMEOUT)
+    ),
+  ]);
+};
+
 const props = defineProps({
   token: {
     type: String,
@@ -52,7 +68,7 @@ const sendMessage = async () => {
   loading.value = true;
 
   try {
-    const response = await fetch("/api/ai/chat", {
+    const response = await fetchWithTimeout(getApiUrl("api/ai/chat"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
