@@ -613,7 +613,7 @@ const handlePageChange = (page) => {
     <button
       v-if="showChatButton"
       @click="showChatPanel = !showChatPanel"
-      class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-12 h-12 sm:w-14 sm:h-14 bg-neutral-900 hover:bg-neutral-800 text-white flex items-center justify-center transition-colors z-40 shadow-card hover:shadow-card-hover"
+      class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-12 h-12 sm:w-14 sm:h-14 bg-primary-600 hover:bg-primary-700 text-white rounded-full flex items-center justify-center transition-colors z-40 shadow-card hover:shadow-card-hover"
     >
       <Bot class="w-5 h-5 sm:w-6 sm:h-6" />
     </button>

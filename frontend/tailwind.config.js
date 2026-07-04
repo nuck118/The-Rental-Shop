@@ -39,6 +39,11 @@ export default {
           950: '#0a0a0a',
         },
       },
+      borderRadius: {
+        'lg': '0.5rem',
+        'md': '0.375rem',
+        'sm': '0.25rem',
+      },
       boxShadow: {
         'card': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
         'card-hover': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.06)',
