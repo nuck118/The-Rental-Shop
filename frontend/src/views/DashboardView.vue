@@ -19,7 +19,7 @@ const showStatusDropdown = ref(false);
 const showBrandDropdown = ref(false);
 const showSortDropdown = ref(false);
 const showMobileFilters = ref(false);
-const sortField = ref("name");
+const sortField = ref("name-asc");
 const sortDirection = ref("asc");
 
 // Toast notification state
@@ -63,13 +63,13 @@ const filteredDevices = computed(() => {
     devices = devices.filter(d => d.status === "In Use" && d.assigned_to === authStore.user?.username);
   }
   // all tab shows everything, with optional filters
-  if (selectedStatus.value !== "all" && activeTab.value === "all") {
+  if (selectedStatus.value !== "all") {
     devices = devices.filter(d => d.status === selectedStatus.value);
   }
-  if (selectedBrand.value !== "all" && activeTab.value === "all") {
+  if (selectedBrand.value !== "all") {
     devices = devices.filter(d => d.brand === selectedBrand.value);
   }
-  if (searchQuery.value && activeTab.value === "all") {
+  if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase();
     devices = devices.filter(d => d.name.toLowerCase().includes(q) || d.brand.toLowerCase().includes(q));
   }
@@ -137,8 +137,7 @@ const switchTab = (tabId) => {
 const handleStatusSelect = (s) => { selectedStatus.value = s; showStatusDropdown.value = false; };
 const handleBrandSelect = (b) => { selectedBrand.value = b; showBrandDropdown.value = false; };
 const handleSortSelect = (option) => {
-  sortField.value = option.value.split("-")[0];
-  sortDirection.value = option.value.split("-")[1];
+  sortField.value = option.value;
   showSortDropdown.value = false;
 };
 
