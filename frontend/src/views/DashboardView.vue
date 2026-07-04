@@ -290,12 +290,12 @@ const handlePageChange = (page) => {
         <div class="hidden sm:flex flex-wrap gap-2 sm:gap-3 items-center">
           <!-- Search -->
           <div class="relative flex-1 min-w-[200px]">
-            <Search class="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+            <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
             <input
               v-model="searchQuery"
               type="text"
               placeholder="Search devices..."
-              class="w-full pl-6 pr-0 py-2 bg-transparent border-b border-neutral-200 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-none focus:ring-0 transition-colors"
+              class="w-full pl-10 pr-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-neutral-900 focus:outline-none focus:ring-0 transition-all"
             />
           </div>
 
@@ -375,12 +375,12 @@ const handlePageChange = (page) => {
         <!-- Mobile -->
         <div class="sm:hidden space-y-2">
           <div class="relative">
-            <Search class="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+            <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
             <input
               v-model="searchQuery"
               type="text"
               placeholder="Search devices..."
-              class="w-full pl-6 pr-0 py-2 bg-transparent border-b border-neutral-200 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-none focus:ring-0 transition-colors"
+              class="w-full pl-10 pr-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-neutral-900 focus:outline-none focus:ring-0 transition-all"
             />
           </div>
 
