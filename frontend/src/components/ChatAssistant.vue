@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, nextTick, onMounted } from "vue";
-import { Send, Loader, Bot, Circle } from "lucide-vue-next";
+import { Send, Loader } from "lucide-vue-next";
 import { useAuthStore } from "../stores/auth";
 
 const props = defineProps({
@@ -19,7 +19,6 @@ const conversationHistory = ref([]);
 const messagesContainer = ref(null);
 
 onMounted(() => {
-  // Add initial greeting
   messages.value.push({
     id: 1,
     role: "assistant",
@@ -41,7 +40,6 @@ const sendMessage = async () => {
   const userMessage = userInput.value;
   userInput.value = "";
 
-  // Add user message to UI
   messages.value.push({
     id: messages.value.length + 1,
     role: "user",
@@ -74,7 +72,6 @@ const sendMessage = async () => {
 
     const data = await response.json();
 
-    // Add assistant message to UI
     messages.value.push({
       id: messages.value.length + 1,
       role: "assistant",
@@ -83,7 +80,6 @@ const sendMessage = async () => {
       timestamp: new Date(),
     });
 
-    // Update conversation history for context
     conversationHistory.value.push({
       role: "user",
       content: userMessage,
@@ -93,7 +89,6 @@ const sendMessage = async () => {
       content: data.message,
     });
 
-    // Keep only last 6 messages for context
     if (conversationHistory.value.length > 6) {
       conversationHistory.value = conversationHistory.value.slice(-6);
     }
@@ -123,14 +118,6 @@ const emit = defineEmits(['rent']);
 const rentDevice = (device) => {
   emit("rent", device);
 };
-
-const getStatusDot = (status) => {
-  const colors = {
-    Available: "text-amber-500",
-    "In Use": "text-blue-500",
-  };
-  return colors[status] || "text-neutral-400";
-};
 </script>
 
 <template>
@@ -138,54 +125,50 @@ const getStatusDot = (status) => {
     <!-- Messages Container -->
     <div
       ref="messagesContainer"
-      class="flex-1 overflow-y-auto p-4 space-y-4 bg-neutral-50/80"
+      class="flex-1 overflow-y-auto p-4 space-y-4 bg-neutral-50"
     >
       <div
-        v-for="msg in messages"
+        v-for="(msg, index) in messages"
         :key="msg.id"
         :class="['flex', msg.role === 'user' ? 'justify-end' : 'justify-start']"
       >
         <div
           :class="[
-            'max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed',
+            'max-w-[85%] sm:max-w-xs px-4 py-2.5 text-sm leading-relaxed animate-fade-in-up',
             msg.role === 'user'
-              ? 'bg-gradient-to-br from-primary-600 to-primary-500 text-white shadow-md shadow-primary-600/15'
-              : 'bg-white border border-neutral-200 text-neutral-900 shadow-sm',
+              ? 'bg-neutral-900 text-white'
+              : 'bg-white border border-neutral-200 text-neutral-900',
           ]"
         >
           <p>{{ msg.content }}</p>
 
           <!-- Recommendations -->
-          <div v-if="msg.recommendations && msg.recommendations.length > 0" class="mt-4 space-y-3">
+          <div v-if="msg.recommendations && msg.recommendations.length > 0" class="mt-3 space-y-2">
             <div
               v-for="rec in msg.recommendations"
               :key="rec.id"
-              class="bg-neutral-50 border border-neutral-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
+              class="bg-neutral-50 border border-neutral-200 p-3"
             >
-              <div class="flex justify-between items-start gap-3">
-                <div class="min-w-0">
-                  <p class="font-semibold text-neutral-900 text-sm">{{ rec.name }}</p>
-                  <p class="text-xs text-neutral-500 mt-0.5 font-medium tracking-wide uppercase">{{ rec.brand }}</p>
-                  <p class="text-xs text-neutral-600 mt-2 leading-relaxed">{{ rec.reason }}</p>
+              <div class="flex justify-between items-start gap-2">
+                <div class="flex-1 min-w-0">
+                  <p class="font-semibold text-neutral-900 text-sm truncate">{{ rec.name }}</p>
+                  <p class="text-xs text-neutral-600 truncate">{{ rec.brand }}</p>
+                  <p class="text-xs text-neutral-500 mt-1.5 line-clamp-2">{{ rec.reason }}</p>
                 </div>
                 <span
-                  v-if="rec.status === 'Available'"
-                  class="inline-flex items-center gap-1 px-2 py-1 bg-amber-50 border border-amber-200 text-amber-700 rounded-full text-xs font-medium flex-shrink-0"
+                  :class="[
+                    'px-2 py-0.5 text-xs font-medium flex-shrink-0',
+                    rec.status === 'Available'
+                      ? 'bg-neutral-100 text-neutral-700'
+                      : 'bg-primary-50 text-primary-700',
+                  ]"
                 >
-                  <Circle class="w-1.5 h-1.5 fill-amber-500 text-amber-500" />
-                  {{ rec.status }}
-                </span>
-                <span
-                  v-else
-                  class="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 text-blue-700 rounded-full text-xs font-medium flex-shrink-0"
-                >
-                  <Circle class="w-1.5 h-1.5 fill-blue-500 text-blue-500" />
                   {{ rec.status }}
                 </span>
               </div>
               <button
                 v-if="rec.status === 'Available'"
-                class="mt-3 w-full py-2.5 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 text-white text-xs font-semibold rounded-xl transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98]"
+                class="mt-2.5 w-full py-2 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-medium transition-colors"
                 @click="rentDevice(rec)"
               >
                 Rent This Device
@@ -197,8 +180,8 @@ const getStatusDot = (status) => {
 
       <!-- Loading Indicator -->
       <div v-if="loading" class="flex justify-start">
-        <div class="flex items-center gap-2.5 px-4 py-3 bg-white border border-neutral-200 rounded-2xl shadow-sm">
-          <Loader class="w-4 h-4 text-primary-600 animate-spin" />
+        <div class="flex items-center gap-2 px-4 py-2.5 bg-white border border-neutral-200">
+          <Loader class="w-3.5 h-3.5 text-neutral-900 animate-spin" />
           <span class="text-sm text-neutral-500">Thinking...</span>
         </div>
       </div>
@@ -212,18 +195,18 @@ const getStatusDot = (status) => {
           @keydown="handleKeydown"
           :disabled="loading"
           placeholder="Ask me about devices..."
-          class="flex-1 px-4 py-2.5 border border-neutral-200 rounded-xl text-sm resize-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition disabled:bg-neutral-50 placeholder:text-neutral-400 bg-neutral-50/50"
+          class="flex-1 px-0 py-2 border-b border-neutral-200 bg-transparent text-sm resize-none placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-none focus:ring-0 transition-colors duration-200 disabled:opacity-50"
           rows="2"
         />
         <button
           @click="sendMessage"
           :disabled="loading || !userInput.trim()"
-          class="px-4 py-2.5 bg-gradient-to-br from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 disabled:from-neutral-300 disabled:to-neutral-300 text-white rounded-xl transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-md active:scale-[0.98] disabled:shadow-none"
+          class="px-4 py-2 bg-neutral-900 hover:bg-neutral-800 disabled:bg-neutral-200 disabled:text-neutral-400 text-white text-sm transition-colors flex items-center justify-center flex-shrink-0"
         >
           <Send class="w-4 h-4" />
         </button>
       </div>
-      <p class="text-xs text-neutral-400 mt-2">Press Enter to send &bull; Shift+Enter for new line</p>
+      <p class="text-xs text-neutral-400 mt-2 hidden sm:block">Press Enter to send, Shift+Enter for new line</p>
     </div>
   </div>
 </template>

@@ -15,6 +15,16 @@ const routes = [
     component: () => import("../views/DashboardView.vue"),
     meta: { requiresAuth: true },
   },
+  // Catch-all: redirect unknown routes based on auth state
+  {
+    path: "/:pathMatch(.*)*",
+    redirect: (to) => {
+      // We can't access Pinia stores directly in redirect function,
+      // so we check localStorage for the token
+      const token = localStorage.getItem("token");
+      return token ? "/dashboard" : "/signin";
+    },
+  },
 ];
 
 const router = createRouter({

@@ -1,3 +1,4 @@
+import time
 import jwt
 from typing import Union
 
@@ -10,6 +11,9 @@ from sqladmin.authentication import AuthenticationBackend
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.models.user import User
+
+# Inactivity timeout: 30 minutes
+ADMIN_INACTIVITY_TIMEOUT_SECONDS = 30 * 60
 
 # Session settings shared with SQLAdmin's internal SessionMiddleware.
 # SQLAdmin mounts its own SessionMiddleware; do NOT add a second one on the
@@ -66,6 +70,8 @@ class AdminAuthenticationBackend(AuthenticationBackend):
 
             request.session["admin_token"] = token
             request.session["admin_user"] = username
+            # Set initial activity timestamp on login
+            request.session["admin_last_activity"] = time.time()
             return True
         finally:
             db.close()
@@ -95,6 +101,7 @@ class AdminAuthenticationBackend(AuthenticationBackend):
                 url=request.url_for("admin:login"), status_code=302
             )
 
+        user = None
         db = SessionLocal()
         try:
             user = db.query(User).filter(User.username == username).first()
@@ -105,6 +112,20 @@ class AdminAuthenticationBackend(AuthenticationBackend):
                 )
         finally:
             db.close()
+
+        # Check inactivity timeout
+        last_activity = request.session.get("admin_last_activity")
+        if last_activity is not None:
+            elapsed = time.time() - last_activity
+            if elapsed > ADMIN_INACTIVITY_TIMEOUT_SECONDS:
+                # Inactive too long — log out
+                request.session.clear()
+                return RedirectResponse(
+                    url=request.url_for("admin:login"), status_code=302
+                )
+
+        # Update last activity timestamp on every authenticated request
+        request.session["admin_last_activity"] = time.time()
 
         request.state.admin_user_id = user.id
         request.state.admin_user = user
