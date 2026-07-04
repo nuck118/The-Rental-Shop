@@ -203,14 +203,44 @@ const handlePageChange = (page) => {
     <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-neutral-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <!-- Brand -->
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 sm:w-9 sm:h-9 bg-neutral-900 rounded-lg flex items-center justify-center">
-              <span class="text-white text-xs sm:text-sm font-bold">TRS</span>
+          <!-- Brand + Profile row on mobile -->
+          <div class="flex items-center justify-between sm:block">
+            <!-- Brand -->
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 sm:w-9 sm:h-9 bg-neutral-900 rounded-lg flex items-center justify-center">
+                <span class="text-white text-xs sm:text-sm font-bold">TRS</span>
+              </div>
+              <div>
+                <h1 class="text-sm sm:text-base font-bold text-neutral-900 tracking-tight">The Rental Shop</h1>
+                <p class="text-[10px] sm:text-xs text-neutral-500 mt-0.5">Hardware Rental Management</p>
+              </div>
             </div>
-            <div>
-              <h1 class="text-sm sm:text-base font-bold text-neutral-900 tracking-tight">The Rental Shop</h1>
-              <p class="text-[10px] sm:text-xs text-neutral-500 mt-0.5">Hardware Rental Management</p>
+
+            <!-- Profile (mobile only) -->
+            <div class="relative sm:hidden">
+              <button
+                @click="showProfileMenu = !showProfileMenu"
+                class="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-neutral-100 transition-colors"
+              >
+                <div class="w-8 h-8 bg-neutral-900 rounded-lg flex items-center justify-center text-white text-sm font-bold">
+                  {{ authStore.user?.username?.[0]?.toUpperCase() || "U" }}
+                </div>
+              </button>
+
+              <transition name="dropdown">
+                <div
+                  v-if="showProfileMenu"
+                  class="absolute right-0 mt-2 w-48 bg-white rounded-lg border border-neutral-200 shadow-lg z-10"
+                >
+                  <button
+                    @click="handleLogout"
+                    class="w-full text-left px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors flex items-center gap-2 rounded-t-lg"
+                  >
+                    <LogOut class="w-4 h-4" />
+                    Sign Out
+                  </button>
+                </div>
+              </transition>
             </div>
           </div>
 
@@ -232,7 +262,7 @@ const handlePageChange = (page) => {
             </div>
           </div>
 
-          <!-- Desktop tabs -->
+          <!-- Desktop tabs + Profile -->
           <div class="hidden sm:flex items-center gap-1">
             <button
               v-for="tab in tabs"
@@ -248,11 +278,9 @@ const handlePageChange = (page) => {
               <component :is="tab.icon" class="w-4 h-4 inline-block mr-1.5" />
               {{ tab.label }}
             </button>
-          </div>
 
-          <!-- Profile -->
-          <div class="flex items-center gap-2">
-            <div class="relative">
+            <!-- Profile (desktop) -->
+            <div class="relative ml-2">
               <button
                 @click="showProfileMenu = !showProfileMenu"
                 class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-neutral-100 transition-colors"
@@ -260,7 +288,7 @@ const handlePageChange = (page) => {
                 <div class="w-8 h-8 bg-neutral-900 rounded-lg flex items-center justify-center text-white text-sm font-bold">
                   {{ authStore.user?.username?.[0]?.toUpperCase() || "U" }}
                 </div>
-                <span class="text-sm text-neutral-700 hidden sm:inline">{{ authStore.user?.username || "User" }}</span>
+                <span class="text-sm text-neutral-700">{{ authStore.user?.username || "User" }}</span>
               </button>
 
               <transition name="dropdown">
@@ -432,6 +460,30 @@ const handlePageChange = (page) => {
                       class="dropdown-editorial-item text-xs"
                     >
                       {{ brand === 'all' ? 'All Brands' : brand }}
+                    </button>
+                  </div>
+                </transition>
+              </div>
+              <div class="relative col-span-2">
+                <button
+                  @click="showSortDropdown = !showSortDropdown"
+                  class="w-full flex items-center justify-between gap-2 px-3 py-2 border border-neutral-200 text-xs bg-white rounded-lg"
+                >
+                  <span class="flex items-center gap-2 truncate">
+                    <ArrowUpDown class="w-3 h-3 text-neutral-400 flex-shrink-0" />
+                    <span class="truncate">Sort: {{ sortOptions.find(o => o.value === sortField)?.label || 'Name (A-Z)' }}</span>
+                  </span>
+                  <ChevronRight class="w-3 h-3 text-neutral-400 flex-shrink-0" />
+                </button>
+                <transition name="dropdown">
+                  <div v-if="showSortDropdown" class="dropdown-editorial">
+                    <button
+                      v-for="option in sortOptions"
+                      :key="option.value"
+                      @click="handleSortSelect(option)"
+                      class="dropdown-editorial-item text-xs"
+                    >
+                      {{ option.label }}
                     </button>
                   </div>
                 </transition>
