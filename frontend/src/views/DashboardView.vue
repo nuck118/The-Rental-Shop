@@ -157,7 +157,7 @@ const handleRent = async (deviceOrId) => {
   try {
     await deviceStore.rentDevice(authStore.token, deviceId, authStore.csrfToken);
     await refreshDevices();
-    showToast("success", `✓ ${deviceName} has been rented. Find it in My Rentals.`);
+    showToast("success", `${deviceName} has been rented.`);
     if (!showChatPanel.value) switchTab("rented");
   } catch (err) {
     showToast("error", err.message);
@@ -170,7 +170,7 @@ const handleReturn = async (deviceOrId) => {
   try {
     await deviceStore.returnDevice(authStore.token, deviceId, authStore.csrfToken);
     await refreshDevices();
-    showToast("success", `✓ ${deviceName} has been returned successfully.`);
+    showToast("success", `${deviceName} has been returned.`);
   } catch (err) {
     showToast("error", err.message);
   }
@@ -189,40 +189,44 @@ const handlePageChange = (page) => {
       <div
         v-if="toast"
         :class="[
-          'fixed top-5 right-5 z-[100] flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg text-sm font-medium transition-all',
-          toast.type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'
+          'fixed top-5 right-5 z-[100] flex items-center gap-3 px-4 py-3 text-sm font-medium shadow-dropdown transition-all',
+          toast.type === 'success' ? 'bg-white border border-neutral-200 text-neutral-900' : 'error-banner'
         ]"
       >
-        <CheckCircle v-if="toast.type === 'success'" class="w-5 h-5 flex-shrink-0" />
-        <AlertCircle v-else class="w-5 h-5 flex-shrink-0" />
+        <CheckCircle v-if="toast.type === 'success'" class="w-4 h-4 text-neutral-600 flex-shrink-0" />
+        <AlertCircle v-else class="w-4 h-4 flex-shrink-0" />
         <span>{{ toast.message }}</span>
-        <button @click="toast = null" class="ml-2 opacity-60 hover:opacity-100"><X class="w-4 h-4" /></button>
+        <button @click="toast = null" class="ml-2 opacity-50 hover:opacity-100 transition-opacity"><X class="w-3.5 h-3.5" /></button>
       </div>
     </transition>
-    
-    <!-- Header with Tabs -->
-    <header class="bg-white">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-neutral-200">
+      <!-- Thin top accent -->
+      <div class="h-1 bg-neutral-900"></div>
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <!-- Brand -->
           <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-neutral-900 flex items-center justify-center">
+              <span class="text-white text-sm font-bold">TRS</span>
+            </div>
             <div>
-              <h1 class="text-xl sm:text-2xl font-light text-neutral-900 tracking-tight">The Rental Shop</h1>
-              <p class="text-xs text-neutral-500 font-light mt-1">Hardware Rental Management</p>
+              <h1 class="text-base font-bold text-neutral-900 tracking-tight">The Rental Shop</h1>
+              <p class="text-xs text-neutral-500 mt-0.5">Hardware Rental Management</p>
             </div>
           </div>
 
-          <!-- Mobile Tab Selector -->
-          <div class="sm:hidden w-full">
-            <div class="grid grid-cols-3 gap-1 bg-neutral-100 rounded-lg p-1">
+          <!-- Mobile Tabs -->
+          <div class="sm:hidden">
+            <div class="flex border border-neutral-200 divide-x divide-neutral-200">
               <button
                 v-for="tab in tabs"
                 :key="tab.id"
                 @click="switchTab(tab.id)"
                 :class="[
-                  'px-2 py-2.5 font-medium text-xs transition rounded-md flex items-center justify-center gap-1.5',
-                  activeTab === tab.id
-                    ? 'bg-white text-primary-600 shadow-sm'
-                    : 'text-neutral-600 hover:text-neutral-900',
+                  'flex-1 px-3 py-2.5 text-xs font-medium transition-colors flex items-center justify-center gap-1.5',
+                  activeTab === tab.id ? 'bg-neutral-900 text-white' : 'bg-white text-neutral-500 hover:text-neutral-900',
                 ]"
               >
                 <component :is="tab.icon" class="w-3.5 h-3.5" />
@@ -231,51 +235,51 @@ const handlePageChange = (page) => {
             </div>
           </div>
 
-          <!-- Desktop Navigation Tabs -->
-          <div class="hidden sm:flex items-center gap-4">
-            <div class="flex gap-6">
-              <button
-                v-for="tab in tabs"
-                :key="tab.id"
-                @click="switchTab(tab.id)"
-                :class="[
-                  'px-1 py-2 font-medium text-sm transition border-b-2 flex items-center gap-2',
-                  activeTab === tab.id
-                    ? 'border-primary-600 text-primary-600'
-                    : 'border-transparent text-neutral-600 hover:text-neutral-900',
-                ]"
-              >
-                <component :is="tab.icon" class="w-4 h-4" />
-                {{ tab.label }}
-              </button>
-            </div>
+          <!-- Desktop tabs -->
+          <div class="hidden sm:flex items-center gap-6">
+            <button
+              v-for="tab in tabs"
+              :key="tab.id"
+              @click="switchTab(tab.id)"
+              :class="[
+                'px-1 py-2 text-sm font-medium transition-colors border-b-2 -mb-4',
+                activeTab === tab.id
+                  ? 'border-neutral-900 text-neutral-900'
+                  : 'border-transparent text-neutral-500 hover:text-neutral-900',
+              ]"
+            >
+              <component :is="tab.icon" class="w-4 h-4 inline-block mr-1.5" />
+              {{ tab.label }}
+            </button>
           </div>
 
+          <!-- Profile -->
           <div class="flex items-center gap-3">
-            <!-- Profile Menu -->
             <div class="relative">
               <button
                 @click="showProfileMenu = !showProfileMenu"
-                class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-neutral-100 transition"
+                class="flex items-center gap-2 px-3 py-2 hover:bg-neutral-100 transition-colors"
               >
-                <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center text-white text-sm font-medium">
+                <div class="w-8 h-8 bg-neutral-900 flex items-center justify-center text-white text-sm font-bold">
                   {{ authStore.user?.username?.[0]?.toUpperCase() || "U" }}
                 </div>
                 <span class="text-sm text-neutral-700 hidden sm:inline">{{ authStore.user?.username || "User" }}</span>
               </button>
 
-              <div
-                v-if="showProfileMenu"
-                class="absolute right-0 mt-2 w-48 bg-white rounded-lg border border-neutral-200 shadow-sm z-10"
-              >
-                <button
-                  @click="handleLogout"
-                  class="w-full text-left px-4 py-2 text-sm text-primary-600 hover:bg-neutral-50 rounded-lg transition flex items-center gap-2"
+              <transition name="dropdown">
+                <div
+                  v-if="showProfileMenu"
+                  class="absolute right-0 mt-1 w-48 bg-white border border-neutral-200 shadow-dropdown z-10"
                 >
-                  <LogOut class="w-4 h-4" />
-                  Sign Out
-                </button>
-              </div>
+                  <button
+                    @click="handleLogout"
+                    class="w-full text-left px-4 py-2.5 text-sm text-primary-600 hover:bg-neutral-100 transition-colors flex items-center gap-2"
+                  >
+                    <LogOut class="w-4 h-4" />
+                    Sign Out
+                  </button>
+                </div>
+              </transition>
             </div>
           </div>
         </div>
@@ -285,197 +289,198 @@ const handlePageChange = (page) => {
     <!-- Filter Bar -->
     <div class="bg-white border-b border-neutral-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <!-- Desktop Filters -->
-        <div class="hidden sm:flex flex-wrap gap-4 items-center">
+        <!-- Desktop -->
+        <div class="hidden sm:flex flex-wrap gap-3 items-center">
           <!-- Search -->
           <div class="relative flex-1 min-w-[200px]">
-            <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+            <Search class="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
             <input
               v-model="searchQuery"
               type="text"
               placeholder="Search devices..."
-              class="w-full pl-9 pr-4 py-2 border border-neutral-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
+              class="w-full pl-6 pr-0 py-2 bg-transparent border-b border-neutral-200 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-none focus:ring-0 transition-colors"
             />
           </div>
-          
-          <!-- Status Filter Custom Dropdown -->
+
+          <!-- Status -->
           <div class="relative">
             <button
               @click="showStatusDropdown = !showStatusDropdown"
-              class="flex items-center gap-3 px-4 py-2 border border-neutral-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition bg-white min-w-[160px] justify-between"
+              class="flex items-center gap-3 px-4 py-2 border border-neutral-200 text-sm bg-white min-w-[150px] justify-between hover:border-neutral-300 transition-colors"
             >
-              <span class="text-neutral-700">
-                {{ selectedStatus === 'all' ? 'All Status' : selectedStatus }}
-              </span>
-              <ChevronRight class="w-4 h-4 text-neutral-400 rotate-90" />
+              <span class="text-neutral-700">{{ selectedStatus === 'all' ? 'All Status' : selectedStatus }}</span>
+              <ChevronRight class="w-3.5 h-3.5 text-neutral-400 -rotate-90" />
             </button>
-            
-            <div
-              v-if="showStatusDropdown"
-              class="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg border border-neutral-200 shadow-lg z-50 overflow-hidden"
-            >
-              <button
-                v-for="status in statusOptions"
-                :key="status"
-                @click="handleStatusSelect(status)"
-                class="w-full text-left px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 transition"
-              >
-                {{ status === 'all' ? 'All Status' : status }}
-              </button>
-            </div>
-          </div>
-          
-          <!-- Brand Filter Custom Dropdown -->
-          <div class="relative">
-            <button
-              @click="showBrandDropdown = !showBrandDropdown"
-              class="flex items-center gap-3 px-4 py-2 border border-neutral-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition bg-white min-w-[160px] justify-between"
-            >
-              <span class="text-neutral-700">
-                {{ selectedBrand === 'all' ? 'All Brands' : selectedBrand }}
-              </span>
-              <ChevronRight class="w-4 h-4 text-neutral-400 rotate-90" />
-            </button>
-            
-            <div
-              v-if="showBrandDropdown"
-              class="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg border border-neutral-200 shadow-lg z-50 overflow-hidden"
-            >
-              <button
-                v-for="brand in brands"
-                :key="brand"
-                @click="handleBrandSelect(brand)"
-                class="w-full text-left px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 transition"
-              >
-                {{ brand === 'all' ? 'All Brands' : brand }}
-              </button>
-            </div>
-          </div>
-
-          <!-- Sort Dropdown -->
-          <div class="relative">
-            <button
-              @click="showSortDropdown = !showSortDropdown"
-              class="flex items-center gap-3 px-4 py-2 border border-neutral-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition bg-white min-w-[180px] justify-between"
-            >
-              <span class="text-neutral-700 flex items-center gap-2">
-                <ArrowUpDown class="w-4 h-4 text-neutral-400" />
-                Sort by {{ sortField.value }}
-              </span>
-              <ChevronRight class="w-4 h-4 text-neutral-400 rotate-90" />
-            </button>
-            
-            <div
-              v-if="showSortDropdown"
-              class="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg border border-neutral-200 shadow-lg z-50 overflow-hidden"
-            >
-              <button
-                v-for="option in sortOptions"
-                :key="option.value"
-                @click="handleSortSelect(option)"
-                class="w-full text-left px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 transition"
-              >
-                {{ option.label }}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Mobile Filters -->
-        <div class="sm:hidden space-y-3">
-          <!-- Search -->
-          <div class="relative">
-            <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="Search devices..."
-              class="w-full pl-9 pr-4 py-2.5 border border-neutral-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
-            />
-          </div>
-
-          <!-- Mobile Filter Button -->
-          <button
-            @click="showMobileFilters = !showMobileFilters"
-            class="flex items-center justify-center gap-2 w-full px-4 py-2.5 border border-neutral-200 rounded-lg text-sm text-neutral-700 bg-white"
-          >
-            <Filter class="w-4 h-4" />
-            Filters
-          </button>
-
-          <!-- Mobile Filter Panel -->
-          <div v-if="showMobileFilters" class="grid grid-cols-2 gap-2">
-            <div class="relative">
-              <button
-                @click="showStatusDropdown = !showStatusDropdown"
-                class="w-full flex items-center justify-between gap-2 px-3 py-2 border border-neutral-200 rounded-lg text-xs bg-white"
-              >
-                <span class="truncate">{{ selectedStatus === 'all' ? 'Status' : selectedStatus }}</span>
-                <ChevronRight class="w-3 h-3 text-neutral-400 flex-shrink-0" />
-              </button>
-              <div
-                v-if="showStatusDropdown"
-                class="absolute top-full left-0 mt-1 w-full bg-white rounded-lg border border-neutral-200 shadow-lg z-50"
-              >
+            <transition name="dropdown">
+              <div v-if="showStatusDropdown" class="dropdown-editorial">
                 <button
                   v-for="status in statusOptions"
                   :key="status"
                   @click="handleStatusSelect(status)"
-                  class="w-full text-left px-3 py-2 text-xs text-neutral-700 hover:bg-neutral-50"
+                  class="dropdown-editorial-item"
                 >
                   {{ status === 'all' ? 'All Status' : status }}
                 </button>
               </div>
-            </div>
+            </transition>
+          </div>
 
-            <div class="relative">
-              <button
-                @click="showBrandDropdown = !showBrandDropdown"
-                class="w-full flex items-center justify-between gap-2 px-3 py-2 border border-neutral-200 rounded-lg text-xs bg-white"
-              >
-                <span class="truncate">{{ selectedBrand === 'all' ? 'Brand' : selectedBrand }}</span>
-                <ChevronRight class="w-3 h-3 text-neutral-400 flex-shrink-0" />
-              </button>
-              <div
-                v-if="showBrandDropdown"
-                class="absolute top-full left-0 mt-1 w-full bg-white rounded-lg border border-neutral-200 shadow-lg z-50"
-              >
+          <!-- Brand -->
+          <div class="relative">
+            <button
+              @click="showBrandDropdown = !showBrandDropdown"
+              class="flex items-center gap-3 px-4 py-2 border border-neutral-200 text-sm bg-white min-w-[150px] justify-between hover:border-neutral-300 transition-colors"
+            >
+              <span class="text-neutral-700">{{ selectedBrand === 'all' ? 'All Brands' : selectedBrand }}</span>
+              <ChevronRight class="w-3.5 h-3.5 text-neutral-400 -rotate-90" />
+            </button>
+            <transition name="dropdown">
+              <div v-if="showBrandDropdown" class="dropdown-editorial">
                 <button
                   v-for="brand in brands"
                   :key="brand"
                   @click="handleBrandSelect(brand)"
-                  class="w-full text-left px-3 py-2 text-xs text-neutral-700 hover:bg-neutral-50"
+                  class="dropdown-editorial-item"
                 >
                   {{ brand === 'all' ? 'All Brands' : brand }}
                 </button>
               </div>
-            </div>
+            </transition>
           </div>
+
+          <!-- Sort -->
+          <div class="relative">
+            <button
+              @click="showSortDropdown = !showSortDropdown"
+              class="flex items-center gap-3 px-4 py-2 border border-neutral-200 text-sm bg-white min-w-[160px] justify-between hover:border-neutral-300 transition-colors"
+            >
+              <span class="text-neutral-700 flex items-center gap-2">
+                <ArrowUpDown class="w-3.5 h-3.5 text-neutral-400" />
+                Sort
+              </span>
+              <ChevronRight class="w-3.5 h-3.5 text-neutral-400 -rotate-90" />
+            </button>
+            <transition name="dropdown">
+              <div v-if="showSortDropdown" class="dropdown-editorial">
+                <button
+                  v-for="option in sortOptions"
+                  :key="option.value"
+                  @click="handleSortSelect(option)"
+                  class="dropdown-editorial-item"
+                >
+                  {{ option.label }}
+                </button>
+              </div>
+            </transition>
+          </div>
+        </div>
+
+        <!-- Mobile -->
+        <div class="sm:hidden space-y-3">
+          <div class="relative">
+            <Search class="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Search devices..."
+              class="w-full pl-6 pr-0 py-2 bg-transparent border-b border-neutral-200 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-none focus:ring-0 transition-colors"
+            />
+          </div>
+
+          <button
+            @click="showMobileFilters = !showMobileFilters"
+            class="flex items-center justify-center gap-2 w-full px-4 py-2.5 border border-neutral-200 text-sm text-neutral-700 bg-white hover:border-neutral-300 transition-colors"
+          >
+            <Filter class="w-4 h-4" />
+            {{ showMobileFilters ? 'Hide Filters' : 'Filters' }}
+          </button>
+
+          <transition name="filters">
+            <div v-if="showMobileFilters" class="grid grid-cols-2 gap-2">
+              <div class="relative">
+                <button
+                  @click="showStatusDropdown = !showStatusDropdown"
+                  class="w-full flex items-center justify-between gap-2 px-3 py-2 border border-neutral-200 text-xs bg-white"
+                >
+                  <span class="truncate">{{ selectedStatus === 'all' ? 'Status' : selectedStatus }}</span>
+                  <ChevronRight class="w-3 h-3 text-neutral-400 flex-shrink-0" />
+                </button>
+                <transition name="dropdown">
+                  <div v-if="showStatusDropdown" class="dropdown-editorial">
+                    <button
+                      v-for="status in statusOptions"
+                      :key="status"
+                      @click="handleStatusSelect(status)"
+                      class="dropdown-editorial-item text-xs"
+                    >
+                      {{ status === 'all' ? 'All Status' : status }}
+                    </button>
+                  </div>
+                </transition>
+              </div>
+              <div class="relative">
+                <button
+                  @click="showBrandDropdown = !showBrandDropdown"
+                  class="w-full flex items-center justify-between gap-2 px-3 py-2 border border-neutral-200 text-xs bg-white"
+                >
+                  <span class="truncate">{{ selectedBrand === 'all' ? 'Brand' : selectedBrand }}</span>
+                  <ChevronRight class="w-3 h-3 text-neutral-400 flex-shrink-0" />
+                </button>
+                <transition name="dropdown">
+                  <div v-if="showBrandDropdown" class="dropdown-editorial">
+                    <button
+                      v-for="brand in brands"
+                      :key="brand"
+                      @click="handleBrandSelect(brand)"
+                      class="dropdown-editorial-item text-xs"
+                    >
+                      {{ brand === 'all' ? 'All Brands' : brand }}
+                    </button>
+                  </div>
+                </transition>
+              </div>
+            </div>
+          </transition>
         </div>
       </div>
     </div>
 
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-      <div v-if="deviceStore.loading" class="text-center py-12">
-        <div class="inline-block">
-          <div class="animate-spin rounded-full h-8 w-8 border-2 border-neutral-300 border-t-primary-600"></div>
+      <!-- Loading: Skeleton -->
+      <div v-if="deviceStore.loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+        <div v-for="n in 6" :key="n" class="card-editorial p-5 space-y-4">
+          <div class="flex justify-between items-start">
+            <div class="space-y-2 flex-1">
+              <div class="skeleton h-4 w-3/4"></div>
+              <div class="skeleton h-3 w-1/2"></div>
+            </div>
+            <div class="skeleton h-5 w-16"></div>
+          </div>
+          <div class="space-y-2">
+            <div class="skeleton h-3 w-2/3"></div>
+            <div class="skeleton h-3 w-1/2"></div>
+          </div>
+          <div class="pt-4 border-t border-neutral-100">
+            <div class="skeleton h-9 w-full"></div>
+          </div>
         </div>
-        <p class="mt-4 text-neutral-600 text-sm">Loading devices...</p>
       </div>
 
-      <!-- Error State -->
-      <div v-else-if="deviceStore.error" class="bg-primary-50 border border-primary-200 text-primary-700 px-4 py-3 rounded-lg text-sm">
-        {{ deviceStore.error }}
+      <!-- Error state -->
+      <div v-else-if="deviceStore.error" class="error-banner">
+        <AlertCircle class="w-4 h-4 flex-shrink-0" />
+        <span>{{ deviceStore.error }}</span>
       </div>
 
-      <!-- Available Devices Tab -->
+      <!-- Available Devices -->
       <div v-else-if="activeTab === 'available'">
-        <div v-if="filteredDevices.length === 0" class="text-center py-12">
-          <Package class="w-12 h-12 text-neutral-300 mx-auto mb-4" />
-          <p class="text-neutral-600 text-sm">No available devices at the moment</p>
+        <div v-if="filteredDevices.length === 0" class="empty-state">
+          <Package class="empty-state-icon" />
+          <p class="empty-state-title">No available devices</p>
+          <p class="empty-state-text">All devices are currently in use or under repair</p>
         </div>
-        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           <DeviceCard
             v-for="device in paginatedDevices"
             :key="device.id"
@@ -486,13 +491,14 @@ const handlePageChange = (page) => {
         </div>
       </div>
 
-      <!-- Rented Devices Tab -->
+      <!-- Rented Devices -->
       <div v-else-if="activeTab === 'rented'">
-        <div v-if="filteredDevices.length === 0" class="text-center py-12">
-          <Truck class="w-12 h-12 text-neutral-300 mx-auto mb-4" />
-          <p class="text-neutral-600 text-sm">You don't have any rented devices</p>
+        <div v-if="filteredDevices.length === 0" class="empty-state">
+          <Truck class="empty-state-icon" />
+          <p class="empty-state-title">No rented devices</p>
+          <p class="empty-state-text">You haven't rented any devices yet. Browse available devices to get started.</p>
         </div>
-        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           <DeviceCard
             v-for="device in paginatedDevices"
             :key="device.id"
@@ -503,13 +509,14 @@ const handlePageChange = (page) => {
         </div>
       </div>
 
-      <!-- All Devices Tab -->
+      <!-- All Devices -->
       <div v-else-if="activeTab === 'all'">
-        <div v-if="filteredDevices.length === 0" class="text-center py-12">
-          <Package class="w-12 h-12 text-neutral-300 mx-auto mb-4" />
-          <p class="text-neutral-600 text-sm">No devices found</p>
+        <div v-if="filteredDevices.length === 0" class="empty-state">
+          <Package class="empty-state-icon" />
+          <p class="empty-state-title">No devices found</p>
+          <p class="empty-state-text">Try adjusting your search or filter criteria</p>
         </div>
-        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           <DeviceCard
             v-for="device in paginatedDevices"
             :key="device.id"
@@ -521,36 +528,34 @@ const handlePageChange = (page) => {
       </div>
 
       <!-- Pagination -->
-      <div v-if="filteredTotalPages > 1" class="mt-6 sm:mt-8 flex items-center justify-center gap-1.5 sm:gap-2">
+      <div v-if="filteredTotalPages > 1" class="mt-8 flex items-center justify-center gap-1">
         <button
           @click="handlePageChange(deviceStore.currentPage - 1)"
           :disabled="deviceStore.currentPage === 1"
-          class="p-1.5 sm:p-2 rounded-lg hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          class="px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
-          <ChevronLeft class="w-4 h-4 sm:w-5 sm:h-5 text-neutral-600" />
+          <ChevronLeft class="w-4 h-4" />
         </button>
-        
         <button
           v-for="page in filteredPages"
           :key="page"
           @click="typeof page === 'number' ? handlePageChange(page) : null"
           :class="[
-            'px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition',
+            'px-3 py-2 text-sm font-medium transition-colors',
             typeof page === 'number' && deviceStore.currentPage === page
-              ? 'bg-primary-600 text-white'
+              ? 'bg-neutral-900 text-white'
               : 'hover:bg-neutral-100 text-neutral-600',
-            typeof page !== 'number' ? 'cursor-default px-2' : '',
+            typeof page !== 'number' ? 'cursor-default px-2 text-neutral-400' : '',
           ]"
         >
           {{ page }}
         </button>
-        
         <button
           @click="handlePageChange(deviceStore.currentPage + 1)"
           :disabled="deviceStore.currentPage === filteredTotalPages"
-          class="p-1.5 sm:p-2 rounded-lg hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          class="px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
-          <ChevronRight class="w-4 h-4 sm:w-5 sm:h-5 text-neutral-600" />
+          <ChevronRight class="w-4 h-4" />
         </button>
       </div>
     </main>
@@ -559,30 +564,31 @@ const handlePageChange = (page) => {
     <button
       v-if="showChatButton"
       @click="showChatPanel = !showChatPanel"
-      class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-12 h-12 sm:w-14 sm:h-14 bg-primary-600 hover:bg-primary-700 text-white rounded-full shadow-lg flex items-center justify-center transition hover:scale-110 z-40"
-      title="AI Assistant"
+      class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-12 h-12 sm:w-14 sm:h-14 bg-neutral-900 hover:bg-neutral-800 text-white flex items-center justify-center transition-colors z-40 shadow-card hover:shadow-card-hover"
     >
       <Bot class="w-5 h-5 sm:w-6 sm:h-6" />
     </button>
 
     <!-- AI Chat Panel -->
-    <div
-      v-if="showChatPanel"
-      class="fixed bottom-20 right-4 left-4 sm:bottom-24 sm:right-6 sm:left-auto w-auto sm:w-[350px] md:w-[400px] h-[500px] sm:h-[600px] max-h-[calc(100vh-100px)] sm:max-h-[calc(100vh-120px)] bg-white rounded-2xl shadow-2xl border border-neutral-200 overflow-hidden flex flex-col z-50 transition-all duration-300 transform origin-bottom"
-    >
-      <div class="p-3 sm:p-4 bg-primary-600 text-white flex justify-between items-center">
-        <div class="flex items-center gap-2">
-          <Bot class="w-4 h-4 sm:w-5 sm:h-5" />
-          <h3 class="font-medium text-sm sm:text-base">AI Assistant</h3>
+    <transition name="chat">
+      <div
+        v-if="showChatPanel"
+        class="fixed bottom-20 right-4 left-4 sm:bottom-24 sm:right-6 sm:left-auto w-auto sm:w-[350px] md:w-[400px] h-[500px] sm:h-[600px] max-h-[calc(100vh-100px)] sm:max-h-[calc(100vh-120px)] bg-white border border-neutral-200 shadow-modal overflow-hidden flex flex-col z-50"
+      >
+        <div class="p-4 bg-neutral-900 text-white flex justify-between items-center">
+          <div class="flex items-center gap-2">
+            <Bot class="w-5 h-5" />
+            <h3 class="font-medium text-sm">AI Assistant</h3>
+          </div>
+          <button @click="showChatPanel = false" class="text-neutral-400 hover:text-white transition-colors">
+            <X class="w-4 h-4" />
+          </button>
         </div>
-        <button @click="showChatPanel = false" class="text-primary-100 hover:text-white transition">
-          <X class="w-4 h-4 sm:w-5 sm:h-5" />
-        </button>
+        <div class="flex-1 overflow-hidden">
+          <ChatAssistant :token="authStore.token" @rent="handleRent" />
+        </div>
       </div>
-      <div class="flex-1 overflow-hidden">
-        <ChatAssistant :token="authStore.token" @rent="handleRent" />
-      </div>
-    </div>
+    </transition>
   </div>
 </template>
 

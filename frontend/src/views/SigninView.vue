@@ -36,71 +36,78 @@ const handleKeydown = (e) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
-    <div class="w-full max-w-sm sm:max-w-md">
-      <!-- Header -->
-      <div class="text-center mb-8 sm:mb-12">
-        <div class="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-primary-600 rounded-lg mb-3 sm:mb-4">
-          <Lock class="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+  <div class="min-h-screen bg-white flex flex-col">
+    <div class="flex-1 flex items-center justify-center px-6">
+      <div class="w-full max-w-sm">
+        <!-- Logo -->
+        <div class="mb-12">
+          <div class="w-10 h-10 bg-neutral-900 flex items-center justify-center mb-5">
+            <span class="text-white text-lg font-bold">TRS</span>
+          </div>
+          <h1 class="text-2xl font-bold text-neutral-900 tracking-tight">The Rental Shop</h1>
+          <p class="text-neutral-500 text-sm mt-1.5">Hardware Rental Management</p>
         </div>
-        <h1 class="text-2xl sm:text-3xl font-light text-neutral-900 tracking-tight">The Rental Shop</h1>
-        <p class="text-neutral-500 mt-1.5 sm:mt-2 text-xs sm:text-sm font-light">Hardware Rental Management</p>
-      </div>
 
-      <!-- Form Card -->
-      <div class="bg-white rounded-lg border border-neutral-200 p-5 sm:p-8 shadow-sm">
-        <form @submit.prevent="handleSignin" class="space-y-5 sm:space-y-6">
-          <!-- Username Field -->
+        <!-- Form -->
+        <form @submit.prevent="handleSignin" class="space-y-6">
+          <!-- Username -->
           <div>
-            <label for="username" class="block text-xs sm:text-sm font-medium text-neutral-700 mb-1.5 sm:mb-2">
-              Username
-            </label>
-            <div class="relative">
-              <Mail class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-neutral-400" />
+            <label for="username" class="block text-xs font-medium text-neutral-600 mb-2 uppercase tracking-wider">Username</label>
+            <div class="relative border-b border-neutral-200 focus-within:border-primary-500 transition-colors duration-200">
+              <Mail class="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
               <input
                 id="username"
                 v-model="username"
                 type="text"
                 placeholder="Enter your username"
                 @keydown="handleKeydown"
-                class="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition text-xs sm:text-sm"
+                class="w-full pl-6 pr-0 py-2 bg-transparent border-none text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-0"
               />
             </div>
           </div>
 
-          <!-- Password Field -->
+          <!-- Password -->
           <div>
-            <label for="password" class="block text-xs sm:text-sm font-medium text-neutral-700 mb-1.5 sm:mb-2">
-              Password
-            </label>
-            <div class="relative">
-              <Lock class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-neutral-400" />
+            <label for="password" class="block text-xs font-medium text-neutral-600 mb-2 uppercase tracking-wider">Password</label>
+            <div class="relative border-b border-neutral-200 focus-within:border-primary-500 transition-colors duration-200">
+              <Lock class="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
               <input
                 id="password"
                 v-model="password"
                 type="password"
                 placeholder="Enter your password"
                 @keydown="handleKeydown"
-                class="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition text-xs sm:text-sm"
+                class="w-full pl-6 pr-0 py-2 bg-transparent border-none text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-0"
               />
             </div>
           </div>
 
-          <!-- Error Message -->
-          <div v-if="error" class="bg-primary-50 border border-primary-200 text-primary-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm">
-            {{ error }}
-          </div>
+          <!-- Error -->
+          <transition name="toast">
+            <div v-if="error" class="error-banner">
+              <span class="w-1.5 h-1.5 bg-primary-500 flex-shrink-0"></span>
+              {{ error }}
+            </div>
+          </transition>
 
-          <!-- Submit Button -->
+          <!-- Submit -->
           <button
             type="submit"
             :disabled="loading"
-            class="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-neutral-300 text-white font-medium py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg transition duration-200 flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm"
+            class="btn-editorial-primary w-full"
           >
-            <LogIn class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <LogIn v-if="!loading" class="w-4 h-4" />
+            <svg v-else class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
             {{ loading ? "Signing in..." : "Sign In" }}
           </button>
         </form>
+
+        <p class="text-center text-neutral-400 text-xs mt-10">
+          &copy; {{ new Date().getFullYear() }} The Rental Shop
+        </p>
       </div>
     </div>
   </div>
