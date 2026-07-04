@@ -209,17 +209,25 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         # 5. Call next middleware/route handler
         response = await call_next(request)
 
-        # 6. Add security response headers
+        # 6. Add CORS headers for cross-origin requests (Vercel -> Render)
+        origin = request.headers.get("origin")
+        if origin:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-CSRF-Token"
+
+        # 7. Add security response headers
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         
-        # Relaxed CSP for admin panel and development
+        # Relaxed CSP to allow API calls from Vercel frontend
         if request.url.path.startswith("/admin"):
-            response.headers["Content-Security-Policy"] = "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; img-src 'self' data: blob:; font-src 'self' data:;"
+            response.headers["Content-Security-Policy"] = "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://generativelanguage.googleapis.com;"
         else:
-            response.headers["Content-Security-Policy"] = "default-src 'self'"
+            response.headers["Content-Security-Policy"] = "default-src 'self'; connect-src 'self' https://generativelanguage.googleapis.com;"
 
         return response
 
