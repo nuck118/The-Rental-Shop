@@ -47,12 +47,15 @@ cp .env.example .env
 |---|---|---|
 | `DATABASE_URL` | SQLite file path | `rental_shop.db` |
 | `GEMINI_API_KEY` | Google AI Studio key | — |
-| `CORS_ORIGINS` | Allowed frontend origins | `["http://localhost:5173"]` |
-| `SECRET_KEY` | HMAC secret for CSRF/JWT | `your-secret-key-change-in-production` |
+| `GEMINI_MODEL` | Gemini model name | `gemini-2.5-flash` |
+| `CORS_ORIGINS` | Allowed frontend origins (auto-includes Vercel preview URLs) | Dynamic (see config) |
+| `SECRET_KEY` | HMAC secret for CSRF/JWT | Auto-generated random key per session |
 | `RATE_LIMIT_WINDOW` | Rate limit window in seconds | `60` |
 | `RATE_LIMIT_MAX_REQUESTS` | Max requests per window | `100` |
-| `CSRF_ENABLED` | Enable CSRF protection | `true` |
-| `JWT_ENABLED` | Enable JWT/session verification | `true` |
+| `CSRF_ENABLED` | Enable CSRF protection | `false` (disabled for demo) |
+| `JWT_ENABLED` | Enable JWT/session verification | `false` (disabled for demo) |
+| `ENVIRONMENT` | Runtime environment (`production` or `development`) | — |
+| `VERCEL_URL` | Auto-set by Vercel for preview deployment CORS | — |
 
 Run database migrations:
 
@@ -96,7 +99,7 @@ All `/api` and `/admin` requests are proxied to the backend automatically.
 
 ## Admin Panel (SQLAdmin)
 
-The admin panel at **http://localhost:8000/admin** provides three main tabs:
+The admin panel at **http://localhost:8000/admin** provides five main sections:
 
 ### User Management
 - Create new user accounts
@@ -111,6 +114,14 @@ The admin panel at **http://localhost:8000/admin** provides three main tabs:
 - Assign hardware to users
 - Add maintenance notes
 - Search and filter hardware
+- Boolean filter for repair-flagged devices
+
+### Return Records
+- View all device return history
+- See return condition (perfect, damaged, other) with color-coded badges
+- View descriptions for non-perfect returns
+- Filter by condition or returned-by user
+- Export return records
 
 ### Audit History
 - View all changes made by users
@@ -118,6 +129,13 @@ The admin panel at **http://localhost:8000/admin** provides three main tabs:
 - See old and new values for changes
 - Filter by user, action, or table
 - Export audit logs
+
+### Data Quarantine
+- View records that failed validation during import
+- Inspect raw input data and validation errors
+- Filter by severity (critical/warning) or source
+- Mark quarantined records as resolved
+- Export quarantine entries
 
 For detailed admin panel documentation, see [SQLADMIN_GUIDE.md](SQLADMIN_GUIDE.md).
 
@@ -128,6 +146,23 @@ Complete API documentation is available via Swagger UI at **http://localhost:800
 For detailed API reference, see [API_DOCUMENTATION.md](API_DOCUMENTATION.md).
 
 ### Available Endpoints
+
+#### Authentication
+
+**GET /api/auth/csrf-token** — Generate a CSRF token cookie for state-changing requests
+- No authentication required
+- Returns: CSRF token string in response body, signed cookie in response headers
+- The client must send the token back in the `X-CSRF-Token` header on subsequent POST/PUT/PATCH/DELETE requests
+
+**POST /api/auth/login** — Authenticate user and return JWT token
+- Request body:
+  ```json
+  {
+    "username": "admin",
+    "password": "your_password"
+  }
+  ```
+- Returns: JWT token and user object (id, username, email, is_admin)
 
 #### Hardware Management
 
@@ -150,7 +185,30 @@ For detailed API reference, see [API_DOCUMENTATION.md](API_DOCUMENTATION.md).
 
 **DELETE /api/hardware/{id}** — Delete hardware asset
 - Path parameter: `id` (integer)
-- Returns: Success message
+- Requires: Admin privileges
+- Returns: 204 No Content
+
+**POST /api/hardware/{id}/rent** — Rent a hardware asset
+- Path parameter: `id` (integer)
+- Requires: Authenticated user (Bearer token)
+- The device must have status `Available`
+- Assigns the device to the authenticated user and sets status to `In Use`
+- Returns: Updated HardwareAsset object
+
+**POST /api/hardware/{id}/return** — Return a rented hardware asset
+- Path parameter: `id` (integer)
+- Requires: Authenticated user (Bearer token)
+- The device must be currently rented by the requesting user
+- Request body:
+  ```json
+  {
+    "return_condition": "perfect or damaged or other",
+    "description": "Required if condition is 'other'"
+  }
+  ```
+- If condition is `perfect`, device status becomes `Available` and `repair_flagged` is cleared
+- If condition is `damaged` or `other`, device status becomes `Repair` and `repair_flagged = True`
+- Returns: Updated HardwareAsset object
 
 #### AI Chatbot
 
@@ -626,41 +684,243 @@ alembic history
 
 ---
 
+## Database Models
+
+The application uses SQLAlchemy ORM with four main tables:
+
+### User (`user`)
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | Integer | PK, auto-increment | Unique user ID |
+| `username` | String(255) | Unique, NOT NULL, indexed | Login username |
+| `email` | String(255) | Unique, NOT NULL, indexed | Email address |
+| `password_hash` | String(255) | NOT NULL | SHA-256 with salt |
+| `full_name` | String(255) | Nullable | Display name |
+| `is_active` | Boolean | Default: true | Account active status |
+| `is_admin` | Boolean | Default: false | Admin privileges |
+| `created_at` | DateTime | NOT NULL | Account creation timestamp |
+| `updated_at` | DateTime | NOT NULL | Last update timestamp |
+
+### HardwareAsset (`hardware_asset`)
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | Integer | PK, auto-increment | Unique device ID |
+| `name` | String(255) | NOT NULL, indexed | Device name/model |
+| `brand` | String(100) | NOT NULL | Manufacturer brand |
+| `purchase_date` | Date | Nullable | Date of purchase |
+| `status` | String(50) | NOT NULL, indexed, default: "Available" | Available, In Use, Repair, Unknown |
+| `assigned_to` | String(255) | Nullable | Currently assigned user |
+| `notes` | Text | Nullable | Additional notes / maintenance info |
+| `repair_flagged` | Boolean | Default: false | Flagged for admin repair review |
+
+### DataQuarantine (`data_quarantine`)
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | Integer | PK, auto-increment | Unique quarantine entry ID |
+| `raw_data` | Text | NOT NULL | Original raw input as JSON |
+| `errors` | Text | NOT NULL | Validation errors as JSON |
+| `severity` | String(20) | NOT NULL, default: "warning" | "critical" or "warning" |
+| `source` | String(100) | Nullable | e.g. "seed_script", "api_import" |
+| `resolved` | Boolean | Default: false | Whether the issue has been addressed |
+| `created_at` | DateTime | NOT NULL | Entry creation timestamp |
+
+### ReturnRecord (`return_record`)
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | Integer | PK, auto-increment | Unique return record ID |
+| `hardware_id` | Integer | FK → hardware_asset.id, NOT NULL, indexed | Returned device ID |
+| `returned_by` | String(255) | NOT NULL, indexed | Username who returned the device |
+| `return_condition` | String(50) | NOT NULL | "perfect", "damaged", or "other" |
+| `description` | Text | Nullable | Required when condition is "other" |
+| `returned_at` | DateTime | NOT NULL | Return timestamp |
+
+### AuditLog (`audit_log`)
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | Integer | PK, auto-increment | Unique audit entry ID |
+| `user_id` | Integer | FK → user.id, NOT NULL, indexed | User who performed the action |
+| `action` | String(50) | NOT NULL, indexed | CREATE, UPDATE, DELETE |
+| `table_name` | String(100) | NOT NULL, indexed | Affected table |
+| `record_id` | Integer | NOT NULL | Affected record ID |
+| `old_values` | Text | Nullable | JSON of old values |
+| `new_values` | Text | Nullable | JSON of new values |
+| `description` | Text | Nullable | Human-readable description |
+| `ip_address` | String(45) | Nullable | Client IPv4 or IPv6 |
+| `user_agent` | String(500) | Nullable | Browser/client info |
+| `created_at` | DateTime | NOT NULL, indexed | Log entry timestamp |
+
+---
+
+## Data Validation & Quarantine System
+
+The backend includes a data validation and quarantine system for hardware imports, ensuring data integrity even when bulk-importing records.
+
+### How It Works
+
+1. **Validation** — Incoming hardware records pass through `HardwareImportSchema` (Pydantic), which:
+   - Strips and normalizes whitespace from all string fields
+   - Normalizes purchase dates from multiple formats (ISO, US, EU) to YYYY-MM-DD
+   - Normalizes status to title case and validates against allowed values
+   - Enforces required fields: `name` (1-255 chars), `brand` (1-100 chars)
+   - Rejects records with invalid status when `assigned_to` is provided
+
+2. **Quarantine** — Records that fail validation are stored in the `data_quarantine` table with:
+   - The original raw input preserved as JSON
+   - All validation error messages stored as JSON
+   - A severity flag (`critical` for missing required fields, `warning` for other issues)
+   - Source tracking (e.g., `seed_script`, `api_import`, `api_create`)
+
+3. **Import Batch API** — `import_hardware_batch(db, records, source)` processes multiple records at once, returning separate lists of successfully imported devices and quarantined entries.
+
+### Key Components
+
+- **`app/core/validation.py`** — `HardwareImportSchema` (Pydantic), `ValidationResult`, `validate_hardware_record()`, `quarantine_record()`, `import_hardware_batch()`
+- **`app/models/hardware.py`** — `DataQuarantine` SQLAlchemy model
+
+### Endpoints with Validation
+
+Both `POST /api/hardware` and `PUT /api/hardware/{id}` use the validation pipeline, rejecting invalid data with `400 Bad Request` and automatically quarantining the failed record.
+
+---
+
+## Admin Authentication
+
+The SQLAdmin panel uses session-based authentication separate from the API's JWT flow.
+
+### How It Works
+
+- **Session JWT** — On login, the admin credentials are verified against the `User` table, then a JWT token is stored in the session cookie
+- **Inactivity Timeout** — Admin sessions expire after 30 minutes of inactivity (`admin_last_activity` timestamp tracked per request)
+- **Session Duration** — Maximum session lifetime is 14 days
+- **Cross-Domain** — Session cookie uses `SameSite=None` + `Secure` flag for cross-domain admin access
+
+### Key Components
+
+- **`app/admin_auth.py`** — `AdminAuthenticationBackend` class with `login()`, `logout()`, and `authenticate()` methods
+- **Dependencies** — `app/core/user.py` provides `verify_password()` using SHA-256 with salt
+
+---
+
+## Frontend Architecture
+
+### Router (`src/router/index.js`)
+
+| Path | Component | Auth Required | Description |
+|------|-----------|---------------|-------------|
+| `/` | — | — | Redirects to `/dashboard` |
+| `/signin` | `SigninView.vue` | No (redirects to dashboard if authenticated) | Login page |
+| `/dashboard` | `DashboardView.vue` | Yes (redirects to `/signin` if not authenticated) | Main dashboard with device management |
+| `/:pathMatch(.*)*` | — | — | Catch-all: redirects based on auth state |
+
+### Pinia Stores
+
+| Store | File | Purpose |
+|-------|------|---------|
+| `useAuthStore` | `src/stores/auth.js` | JWT token management, login/logout, auth state |
+| `useDeviceStore` | `src/stores/device.js` | Device list fetching, search, filter, sort, pagination |
+| `useChatStore` | `src/stores/chat.js` | AI chat messages, conversation history, API communication |
+
+### Components
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `DeviceCard` | `src/components/DeviceCard.vue` | Hardware asset card with rent/return actions |
+| `ChatAssistant` | `src/components/ChatAssistant.vue` | Floating AI chatbot panel with conversation UI |
+| `ReturnModal` | `src/components/ReturnModal.vue` | Return condition modal (perfect/damaged/other) |
+
+### Features
+
+- **Authentication Guard** — `beforeEach` navigation guard checks `authStore.isAuthenticated` against localStorage token
+- **Dashboard Tabs** — Three views: Available, My Rentals, All Devices
+- **Search & Filter** — Search by name/brand, filter by status and brand
+- **Sorting** — By name, brand, or purchase date (ascending/descending)
+- **Pagination** — With ellipsis for large datasets
+- **Toast Notifications** — Success/error feedback for rent/return actions
+- **Floating Chat** — Toggleable AI assistant panel
+- **Catch-all Route** — Unknown paths redirect to `/dashboard` or `/signin` based on auth state
+
+---
+
 ## Project Structure
 
 ```
 The-Rental-Shop/
 ├── backend/
 │   ├── app/
-│   │   ├── ai/                # AI chatbot service
-│   │   ├── api/routes/        # API route modules
+│   │   ├── __init__.py
+│   │   ├── main.py                # FastAPI app factory, middleware registration
+│   │   ├── admin.py               # SQLAdmin dashboard & model views
+│   │   ├── admin_auth.py          # Admin session authentication backend
+│   │   ├── admin_helpers.py       # Admin utility helpers
+│   │   ├── ai/                    # AI chatbot service
+│   │   │   ├── router.py          # Chat & health endpoints
+│   │   │   ├── schemas.py         # Pydantic request/response models
+│   │   │   └── services.py        # Device recommendation engine
+│   │   ├── api/routes/            # API route modules
+│   │   │   ├── auth.py            # Login & CSRF token endpoints
+│   │   │   └── hardware.py        # Hardware CRUD + rent/return endpoints
 │   │   ├── core/
-│   │   │   ├── config.py      # Settings (pydantic-settings)
-│   │   │   └── database.py    # SQLAlchemy engine & session
-│   │   ├── models/            # SQLAlchemy ORM models
-│   │   ├── security/          # Security middleware
-│   │   ├── main.py            # FastAPI app factory
-│   │   └── __init__.py
-│   ├── alembic/               # Alembic migrations
-│   │   ├── versions/          # Migration files
-│   │   ├── env.py             # Alembic environment
-│   │   └── script.py.mako     # Migration template
-│   ├── scripts/               # Utility scripts
-│   ├── alembic.ini            # Alembic configuration
-│   ├── requirements.txt
-│   └── .env.example
+│   │   │   ├── config.py          # Settings (pydantic-settings)
+│   │   │   ├── database.py        # SQLAlchemy engine & session factory
+│   │   │   ├── deps.py            # FastAPI dependency injection (JWT auth)
+│   │   │   ├── user.py            # User CRUD & password hashing utilities
+│   │   │   ├── audit.py           # Audit logging helpers
+│   │   │   └── validation.py      # Hardware data validation & quarantine
+│   │   ├── models/                # SQLAlchemy ORM models
+│   │   │   ├── hardware.py        # HardwareAsset, DataQuarantine, ReturnRecord
+│   │   │   ├── user.py            # User model
+│   │   │   └── audit_log.py       # AuditLog model
+│   │   ├── security/
+│   │   │   └── middleware.py      # ASGI middleware: rate limit, JWT, CSRF, CORS, headers
+│   │   └── templates/sqladmin/    # Custom SQLAdmin Jinja2 templates
+│   ├── alembic/                   # Alembic migrations
+│   │   ├── versions/              # Migration files (001-004)
+│   │   ├── env.py                 # Alembic environment config
+│   │   └── script.py.mako         # Migration template
+│   ├── scripts/                   # Utility scripts (seed, etc.)
+│   ├── tests/
+│   │   ├── conftest.py            # Test fixtures & configuration
+│   │   └── test_hardware_rent_return.py  # Rent/return integration tests
+│   ├── alembic.ini                # Alembic configuration
+│   ├── .env.example               # Environment template
+│   ├── requirements.txt           # Python dependencies
+│   ├── pyproject.toml             # Project metadata
+│   ├── Procfile                   # Heroku process definition
+│   └── runtime.txt                # Heroku Python runtime
 ├── frontend/
+│   ├── public/                    # Static assets
 │   ├── src/
-│   │   ├── assets/            # Global CSS (Tailwind directives)
-│   │   ├── components/        # Reusable Vue components
-│   │   ├── router/            # Vue Router config
-│   │   ├── stores/            # Pinia stores
-│   │   ├── views/             # Page-level Vue components
-│   │   ├── App.vue
-│   │   └── main.js
-│   ├── vite.config.js
-│   ├── tailwind.config.js
-│   ├── postcss.config.js
-│   └── package.json
-└── .gitignore
+│   │   ├── assets/
+│   │   │   └── main.css           # Global styles (Tailwind directives)
+│   │   ├── components/
+│   │   │   ├── DeviceCard.vue     # Device card with rent/return actions
+│   │   │   ├── ChatAssistant.vue  # Floating AI chat panel
+│   │   │   └── ReturnModal.vue    # Return condition modal
+│   │   ├── router/
+│   │   │   └── index.js           # Vue Router configuration
+│   │   ├── stores/
+│   │   │   ├── auth.js            # JWT auth state & login
+│   │   │   ├── device.js          # Device list, search, filter, sort, pagination
+│   │   │   └── chat.js            # AI chat messages & API communication
+│   │   ├── views/
+│   │   │   ├── HomeView.vue       # Landing page
+│   │   │   ├── SigninView.vue     # Login page
+│   │   │   └── DashboardView.vue  # Main dashboard with tabs
+│   │   ├── App.vue                # Root Vue component
+│   │   └── main.js                # Vue app entry point
+│   ├── index.html                 # HTML entry point
+│   ├── vite.config.js             # Vite configuration (proxy, build)
+│   ├── tailwind.config.js         # Tailwind CSS configuration
+│   ├── postcss.config.js          # PostCSS configuration
+│   ├── .env.production            # Production environment variables
+│   ├── package.json               # Node dependencies & scripts
+│   └── vercel.json                # Vercel deployment configuration
+├── .gitignore
+├── LICENSE
+├── README.md                      # This file
+├── API_DOCUMENTATION.md           # Detailed API reference
+├── MIGRATION_GUIDE.md             # Piccolo → SQLAlchemy migration notes
+├── SQLADMIN_GUIDE.md              # Admin panel usage guide
+├── DEVELOPMENT_PROMPTS.md         # Development prompts & notes
+└── AI Log.md                      # AI assistant change log
 ```
